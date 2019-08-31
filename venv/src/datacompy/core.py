@@ -30,7 +30,6 @@ import numpy as np
 import xlsxwriter as excelwriter
 
 LOG = logging.getLogger(__name__)
-EXCEL_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/report.xlsx"
 
 
 class Compare(object):
@@ -88,6 +87,7 @@ class Compare(object):
             df2_name="df2",
             ignore_spaces=False,
             ignore_case=False,
+
     ):
 
         if on_index and join_columns is not None:
@@ -429,7 +429,7 @@ class Compare(object):
             ]
         return to_return
 
-    def report(self, sample_count=10):
+    def report(self, report_path, sample_count=10):
 
         """Returns a string representation of a report.  The representation can
         then be printed or saved to a file.
@@ -444,9 +444,8 @@ class Compare(object):
         str
             The report, formatted kinda nicely.
         """
-        writer = pd.ExcelWriter(EXCEL_PATH, engine='xlsxwriter')
-
-        # Header
+        writer = pd.ExcelWriter(report_path, engine='xlsxwriter')
+          # Header
         report = render("header.txt")
         df_header = pd.DataFrame(
             {
@@ -531,8 +530,6 @@ class Compare(object):
 
         df_row_summary.to_excel(writer, sheet_name='Summary', startrow=6, startcol=1)
 
-
-
         # Column Matching
         cnt_intersect = self.intersect_rows.shape[0]
         report += render(
@@ -546,8 +543,8 @@ class Compare(object):
             {
 
                 "Column Comparision": ["Number of columns compared with some values unequal",
-                                   "Number of columns compared with all values equal",
-                                   "Total number of values which compare unequal"],
+                                       "Number of columns compared with all values equal",
+                                       "Total number of values which compare unequal"],
                 "Count": [len([col for col in self.column_stats if col["unequal_cnt"] > 0]),
                           len([col for col in self.column_stats if col["unequal_cnt"] == 0]),
                           sum([col["unequal_cnt"] for col in self.column_stats])]
@@ -555,13 +552,12 @@ class Compare(object):
             , index=[0, 1, 2])
         df_column_comparision.to_excel(writer, sheet_name='Summary', startrow=18, startcol=1)
 
-
         match_stats = []
         match_sample = []
-        excelsheet_rowcount=1;
+        excelsheet_rowcount = 1;
         any_mismatch = False
         df_samplerow_unequal = pd.DataFrame(
-            { "Sample Rows with Unequal Values":""}, index=[0])
+            {"Sample Rows with Unequal Values": ""}, index=[0])
         df_samplerow_unequal.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=0, startcol=1)
         for column in self.column_stats:
             if not column["all_match"]:
@@ -582,9 +578,11 @@ class Compare(object):
                         self.sample_mismatch(column["column"], sample_count, for_display=True)
 
                     )
-                    dframe =(self.sample_mismatch(column["column"], sample_count, for_display=True))
-                    dframe.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=excelsheet_rowcount, startcol=1)
-                    excelsheet_rowcount  = excelsheet_rowcount+dframe.shape[0]+3
+                    dframe = (self.sample_mismatch(column["column"], sample_count, for_display=True))
+                    dframe.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=excelsheet_rowcount,
+                                    startcol=1)
+                    excelsheet_rowcount = excelsheet_rowcount + dframe.shape[0] + 3
+        df_match_stats = pd.DataFrame()
 
         if any_mismatch:
             report += "Columns with Unequal Values or Types\n"
@@ -612,8 +610,7 @@ class Compare(object):
                 report += sample.to_string()
                 report += "\n\n"
         df_match_stats.to_excel(writer, sheet_name='Summary', startrow=26, startcol=1)
-        writer.save()
-        return  report
+
         if self.df1_unq_rows.shape[0] > 0:
             report += "Sample Rows Only in {} (First 10 Columns)\n".format(self.df1_name)
             report += "---------------------------------------{}\n".format("-" * len(self.df1_name))
@@ -631,7 +628,7 @@ class Compare(object):
             unq_count = min(sample_count, self.df2_unq_rows.shape[0])
             report += self.df2_unq_rows.sample(unq_count)[columns].to_string()
             report += "\n\n"
-
+        writer.save()
         return report
 
 
