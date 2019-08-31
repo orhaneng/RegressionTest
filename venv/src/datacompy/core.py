@@ -457,7 +457,7 @@ class Compare(object):
         )
 
         report += df_header[["DataFrame", "Columns", "Rows"]].to_string()
-        df_header.to_excel(writer, sheet_name='Sheet1')
+        df_header.to_excel(writer, sheet_name='Sheet1', startcol=6)
 
         report += "\n\n"
 
@@ -474,17 +474,16 @@ class Compare(object):
         df_column_summary = pd.DataFrame(
             {
 
-                "Column Summary": ["Number of columns in common:" + str(len(self.intersect_columns())),"Number of columns in" + self.df1_name + " but not in " + self.df2_name + ":" + str(
-                    len(self.df1_unq_columns())),"Number of columns in" + self.df2_name + " but not in " + self.df1_name + ":" + str(
-                    len(self.df2_unq_columns()))],
+                "Column Summary": ["Number of columns in common:",
+                                   "Number of columns in " + self.df1_name + " but not in " + self.df2_name + ":",
+                                   "Number of columns in " + self.df2_name + " but not in " + self.df1_name + ":"],
+                "Count": [len(self.intersect_columns()),
+                          len(self.df1_unq_columns()),
+                          len(self.df2_unq_columns())]
             }
-        ,index=[0,1,2])
-        df_column_summary.to_excel(writer, sheet_name='Sheet1', startcol=5)
+            , index=[0, 1, 2])
+        df_column_summary.to_excel(writer, sheet_name='Sheet1', startcol=1)
 
-        writer.save()
-        return df_header
-
-        '''
         # Row Summary
         if self.on_index:
             match_on = "index"
@@ -505,6 +504,36 @@ class Compare(object):
             "Yes" if self._any_dupes else "No",
         )
 
+        df_row_summary = pd.DataFrame(
+            {
+
+                "Row Summary": ["Matched on",
+                                "Any duplicates on match values",
+                                "Absolute Tolerance",
+                                "Relative Tolerance",
+                                "Number of rows in common",
+                                "Number of rows in " + self.df1_name + " but not in " + self.df2_name,
+                                "Number of rows in " + self.df2_name + " but not in " + self.df1_name,
+                                "Number of rows with some compared columns unequal",
+                                "Number of rows with all compared columns equal"],
+                "Info": [match_on,
+                         "Yes" if self._any_dupes else "No",
+                         self.abs_tol,
+                         self.rel_tol,
+                         self.intersect_rows.shape[0],
+                         self.df1_unq_rows.shape[0],
+                         self.df2_unq_rows.shape[0],
+                         self.intersect_rows.shape[0] - self.count_matching_rows(),
+                         self.count_matching_rows()],
+
+            }
+            , index=[0, 1, 2, 4, 5, 6, 7, 8, 9])
+
+        df_row_summary.to_excel(writer, sheet_name='Sheet1', startrow=6, startcol=1)
+
+        writer.save()
+        return report
+        '''
         # Column Matching
         cnt_intersect = self.intersect_rows.shape[0]
         report += render(
