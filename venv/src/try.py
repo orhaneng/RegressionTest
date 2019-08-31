@@ -38,6 +38,3 @@ for item, cost in (expenses):
 workbook.close()
 '''
 print((compare.report()))
-
-df = pd.DataFrame({'A': ['a','a'], 'B': ['b','b']}, index=[0,1])
-print(df)

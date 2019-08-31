@@ -531,9 +531,8 @@ class Compare(object):
 
         df_row_summary.to_excel(writer, sheet_name='Sheet1', startrow=6, startcol=1)
 
-        writer.save()
-        return report
-        '''
+
+
         # Column Matching
         cnt_intersect = self.intersect_rows.shape[0]
         report += render(
@@ -542,7 +541,20 @@ class Compare(object):
             len([col for col in self.column_stats if col["unequal_cnt"] == 0]),
             sum([col["unequal_cnt"] for col in self.column_stats]),
         )
-        
+
+        df_column_comparision = pd.DataFrame(
+            {
+
+                "Column Comparision": ["Number of columns compared with some values unequal",
+                                   "Number of columns compared with all values equal",
+                                   "Total number of values which compare unequal"],
+                "Count": [len([col for col in self.column_stats if col["unequal_cnt"] > 0]),
+                          len([col for col in self.column_stats if col["unequal_cnt"] == 0]),
+                          sum([col["unequal_cnt"] for col in self.column_stats])]
+            }
+            , index=[0, 1, 2])
+        df_column_comparision.to_excel(writer, sheet_name='Sheet1', startrow=18, startcol=1)
+
 
         match_stats = []
         match_sample = []
@@ -565,6 +577,7 @@ class Compare(object):
                         self.sample_mismatch(column["column"], sample_count, for_display=True)
                     )
 
+
         if any_mismatch:
             report += "Columns with Unequal Values or Types\n"
             report += "------------------------------------\n"
@@ -583,7 +596,10 @@ class Compare(object):
                 ]
             ].to_string()
             report += "\n\n"
-
+        df_match_stats.to_excel(writer, sheet_name='Sheet1', startrow=26, startcol=1)
+        writer.save()
+        return report
+        '''
             report += "Sample Rows with Unequal Values\n"
             report += "-------------------------------\n"
             report += "\n"
