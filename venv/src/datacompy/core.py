@@ -27,8 +27,10 @@ import logging
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import xlsxwriter as excelwriter
 
 LOG = logging.getLogger(__name__)
+EXCEL_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/report.xlsx"
 
 
 class Compare(object):
@@ -75,17 +77,17 @@ class Compare(object):
     """
 
     def __init__(
-        self,
-        df1,
-        df2,
-        join_columns=None,
-        on_index=False,
-        abs_tol=0,
-        rel_tol=0,
-        df1_name="df1",
-        df2_name="df2",
-        ignore_spaces=False,
-        ignore_case=False,
+            self,
+            df1,
+            df2,
+            join_columns=None,
+            on_index=False,
+            abs_tol=0,
+            rel_tol=0,
+            df1_name="df1",
+            df2_name="df2",
+            ignore_spaces=False,
+            ignore_case=False,
     ):
 
         if on_index and join_columns is not None:
@@ -298,7 +300,7 @@ class Compare(object):
                     self.intersect_rows[col_1], self.intersect_rows[col_2]
                 )
                 null_diff = (
-                    (self.intersect_rows[col_1].isnull()) ^ (self.intersect_rows[col_2].isnull())
+                        (self.intersect_rows[col_1].isnull()) ^ (self.intersect_rows[col_2].isnull())
                 ).sum()
 
             if row_cnt > 0:
@@ -376,7 +378,6 @@ class Compare(object):
         else:
             return True
 
-
     def subset(self):
         """Return True if dataframe 2 is a subset of dataframe 1.
 
@@ -429,6 +430,7 @@ class Compare(object):
         return to_return
 
     def report(self, sample_count=10):
+
         """Returns a string representation of a report.  The representation can
         then be printed or saved to a file.
 
@@ -442,6 +444,8 @@ class Compare(object):
         str
             The report, formatted kinda nicely.
         """
+        writer = pd.ExcelWriter(EXCEL_PATH, engine='xlsxwriter')
+
         # Header
         report = render("header.txt")
         df_header = pd.DataFrame(
@@ -451,7 +455,10 @@ class Compare(object):
                 "Rows": [self.df1.shape[0], self.df2.shape[0]],
             }
         )
+
         report += df_header[["DataFrame", "Columns", "Rows"]].to_string()
+        df_header.to_excel(writer, sheet_name='Sheet1')
+
         report += "\n\n"
 
         # Column Summary
@@ -463,7 +470,20 @@ class Compare(object):
             self.df1_name,
             self.df2_name,
         )
-        return report
+
+        df_column_summary = pd.DataFrame(
+            {
+
+                "Column Summary": ["Number of columns in common:" + str(len(self.intersect_columns())),"Number of columns in" + self.df1_name + " but not in " + self.df2_name + ":" + str(
+                    len(self.df1_unq_columns())),"Number of columns in" + self.df2_name + " but not in " + self.df1_name + ":" + str(
+                    len(self.df2_unq_columns()))],
+            }
+        ,index=[0,1,2])
+        df_column_summary.to_excel(writer, sheet_name='Sheet1', startcol=5)
+
+        writer.save()
+        return df_header
+
         '''
         # Row Summary
         if self.on_index:
@@ -560,7 +580,6 @@ class Compare(object):
             report += self.df2_unq_rows.sample(unq_count)[columns].to_string()
             report += "\n\n"
 '''
-
 
 
 def render(filename, *fields):
@@ -781,10 +800,10 @@ def generate_id_within_group(dataframe, join_columns):
             raise ValueError("{} was found in your join columns".format(default_value))
         return (
             dataframe[join_columns]
-            .astype(str)
-            .fillna(default_value)
-            .groupby(join_columns)
-            .cumcount()
+                .astype(str)
+                .fillna(default_value)
+                .groupby(join_columns)
+                .cumcount()
         )
     else:
         return dataframe[join_columns].groupby(join_columns).cumcount()
