@@ -659,7 +659,7 @@ class Compare(object):
         fit = stats.norm.pdf(score, np.mean(score), np.std(score))  # this is a fitting indeed
         pl.plot(score, fit, '-o')
         pl.hist(score, density=True)  # use this to draw histogram of your data
-        pl.title("Columns with Unequal Values or Types")
+        pl.title("Score Density Chart")
         pl.savefig("/Users/omerorhan/Documents/EventDetection/regression_server/mydensity.png", dpi=150)
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B29', "/Users/omerorhan/Documents/EventDetection/regression_server/mydensity.png")

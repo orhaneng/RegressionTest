@@ -2,7 +2,7 @@ import datacompy, pandas as pd
 import xlsxwriter
 import sys
 
-writer = pd.ExcelWriter("/Users/omerorhan/Documents/EventDetection/regression_server/report.xlsx", engine='xlsxwriter')
+writer = pd.ExcelWriter("/Users/omerorhan/Documents/EventDetection/regression_server/regression_report.xlsx", engine='xlsxwriter')
 
 df1 = pd.read_csv(
     '/Users/omerorhan/Documents/EventDetection/regression_server/all_event_local_1000_old.csv')
@@ -19,7 +19,7 @@ compare = datacompy.Compare(
     df1_name='Original',  # Optional, defaults to 'df1'
     df2_name='New'  # Optional, defaults to 'df2'
 )
-((compare.report(writer, 10)))
+print((compare.report(writer, sys.maxsize)))
 
 writer.save()
 
