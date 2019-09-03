@@ -29,6 +29,11 @@ import pandas as pd
 import numpy as np
 import xlsxwriter as excelwriter
 
+import matplotlib.pyplot as plt
+
+plt.rcdefaults()
+import numpy as np
+import matplotlib.pyplot as plt
 LOG = logging.getLogger(__name__)
 
 
@@ -429,7 +434,7 @@ class Compare(object):
             ]
         return to_return
 
-    def report(self, report_path, sample_count=10):
+    def report(self, writer, sample_count=10):
 
         """Returns a string representation of a report.  The representation can
         then be printed or saved to a file.
@@ -444,8 +449,7 @@ class Compare(object):
         str
             The report, formatted kinda nicely.
         """
-        writer = pd.ExcelWriter(report_path, engine='xlsxwriter')
-          # Header
+        # Header
         report = render("header.txt")
         df_header = pd.DataFrame(
             {
@@ -455,8 +459,12 @@ class Compare(object):
             }
         )
 
+
         report += df_header[["DataFrame", "Columns", "Rows"]].to_string()
         df_header.to_excel(writer, sheet_name='Summary', startcol=6)
+        df_graph = pd.DataFrame(
+            {"Graphs": ""}, index=[0])
+        df_graph.to_excel(writer, sheet_name='Graphs', startrow=0, startcol=1)
 
         report += "\n\n"
 
@@ -583,7 +591,6 @@ class Compare(object):
                                     startcol=1)
                     excelsheet_rowcount = excelsheet_rowcount + dframe.shape[0] + 3
         df_match_stats = pd.DataFrame()
-
         if any_mismatch:
             report += "Columns with Unequal Values or Types\n"
             report += "------------------------------------\n"
@@ -601,6 +608,8 @@ class Compare(object):
                     "# Null Diff",
                 ]
             ].to_string()
+            self.createChart(df_match_stats,writer)
+
             report += "\n\n"
 
             report += "Sample Rows with Unequal Values\n"
@@ -628,8 +637,18 @@ class Compare(object):
             unq_count = min(sample_count, self.df2_unq_rows.shape[0])
             report += self.df2_unq_rows.sample(unq_count)[columns].to_string()
             report += "\n\n"
-        writer.save()
         return report
+
+    def createChart(self, df_match_stats,writer):
+        y_pos = np.arange(df_match_stats.shape[0])
+        plt.bar(y_pos, df_match_stats['# Unequal'], align='center', alpha=0.5)
+        plt.xticks(y_pos, df_match_stats["Column"])
+        plt.ylabel('Usage')
+        plt.title('Programming language usage')
+        plt.savefig("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png", dpi = 150)
+        worksheet = writer.sheets['Graphs']
+        worksheet.insert_image('B2', "/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
+
 
 
 def render(filename, *fields):
