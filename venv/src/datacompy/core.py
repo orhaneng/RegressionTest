@@ -28,12 +28,12 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import xlsxwriter as excelwriter
-
 import matplotlib.pyplot as plt
 
 plt.rcdefaults()
-import numpy as np
 import matplotlib.pyplot as plt
+import scipy.stats as stats
+import pylab as pl
 
 LOG = logging.getLogger(__name__)
 
@@ -608,7 +608,7 @@ class Compare(object):
                     "# Null Diff",
                 ]
             ].to_string()
-            self.createChart(df_match_stats, writer)
+            self.createUnequalValuesChart(df_match_stats, writer)
 
             report += "\n\n"
 
@@ -637,10 +637,10 @@ class Compare(object):
             unq_count = min(sample_count, self.df2_unq_rows.shape[0])
             report += self.df2_unq_rows.sample(unq_count)[columns].to_string()
             report += "\n\n"
+        self.createScoreDensityChart(self.df2, writer)
         return report
 
-    def createChart(self, df_match_stats, writer):
-
+    def createUnequalValuesChart(self, df_match_stats, writer):
         y_pos = np.arange(df_match_stats.shape[0])
         plt.barh(y_pos, df_match_stats['# Unequal'])
         plt.yticks(y_pos, df_match_stats["Column"])
@@ -649,8 +649,23 @@ class Compare(object):
         plt.savefig("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png", dpi=150)
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B2', "/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
-        #import os
-        #os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
+        plt.close()
+        # import os
+        # os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
+
+    def createScoreDensityChart(self, df2, writer):
+        score = list(df2['score'][df2.score != 'None'].apply(lambda x: int(x)))
+        score.sort(reverse=True)
+        fit = stats.norm.pdf(score, np.mean(score), np.std(score))  # this is a fitting indeed
+        pl.plot(score, fit, '-o')
+        pl.hist(score, density=True)  # use this to draw histogram of your data
+        pl.title("Columns with Unequal Values or Types")
+        pl.savefig("/Users/omerorhan/Documents/EventDetection/regression_server/mydensity.png", dpi=150)
+        worksheet = writer.sheets['Graphs']
+        worksheet.insert_image('B29', "/Users/omerorhan/Documents/EventDetection/regression_server/mydensity.png")
+        plt.close()
+        # import os
+        # os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
 
 
 def render(filename, *fields):
