@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 plt.rcdefaults()
 import numpy as np
 import matplotlib.pyplot as plt
+
 LOG = logging.getLogger(__name__)
 
 
@@ -459,7 +460,6 @@ class Compare(object):
             }
         )
 
-
         report += df_header[["DataFrame", "Columns", "Rows"]].to_string()
         df_header.to_excel(writer, sheet_name='Summary', startcol=6)
         df_graph = pd.DataFrame(
@@ -608,7 +608,7 @@ class Compare(object):
                     "# Null Diff",
                 ]
             ].to_string()
-            self.createChart(df_match_stats,writer)
+            self.createChart(df_match_stats, writer)
 
             report += "\n\n"
 
@@ -639,16 +639,18 @@ class Compare(object):
             report += "\n\n"
         return report
 
-    def createChart(self, df_match_stats,writer):
+    def createChart(self, df_match_stats, writer):
+
         y_pos = np.arange(df_match_stats.shape[0])
-        plt.bar(y_pos, df_match_stats['# Unequal'], align='center', alpha=0.5)
-        plt.xticks(y_pos, df_match_stats["Column"])
-        plt.ylabel('Usage')
-        plt.title('Programming language usage')
-        plt.savefig("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png", dpi = 150)
+        plt.barh(y_pos, df_match_stats['# Unequal'])
+        plt.yticks(y_pos, df_match_stats["Column"])
+        plt.subplots_adjust(left=0.36, right=0.9, top=0.9, bottom=0.1)
+        plt.title("Columns with Unequal Values or Types")
+        plt.savefig("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png", dpi=150)
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B2', "/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
-
+        #import os
+        #os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
 
 
 def render(filename, *fields):
