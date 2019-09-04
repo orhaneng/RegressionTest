@@ -5,7 +5,7 @@ import requests
 
 
 # Retrieve data from regression server
-client = boto3.client('dynamodb', endpoint_url='http://10.100.2.42:8000')
+client = boto3.client('dynamodb', endpoint_url='http://localhost:8000')
 print("Processed events:", client.describe_table(TableName='tlm_trip').get("Table").get("ItemCount"), "trips")
 
 
@@ -105,4 +105,4 @@ for index in list(trips.index):
     result_index += 1
 
 result.sort_values([ "driver_id", "start_time", ], inplace = True)
-result.to_csv("/home/ec2-user/yichuan_testing/all_event_local.csv", index = False)
+result.to_csv("/Users/omerorhan/Documents/EventDetection/multiprocess/all_event_local.csv", index = False)
