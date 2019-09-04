@@ -11,24 +11,25 @@ import json
 import datetime
 from multiprocessing import Pool
 
-
-#batch_file_dir='/Users/omerorhan/Documents/EventDetection/multiprocess'
-batch_file_dir='/home/ec2-user/yichuan_testing/upload_1_thread/Apr_weely_data'
-server_url='http://localhost:8080/api/v2/drivers'
-tripIdcsv='/home/ec2-user/yichuan_testing/tripid.csv'
-#tripIdcsv='/Users/omerorhan/Documents/EventDetection/multiprocess/tripid.csv'
-
+batch_file_dir = '/Users/omerorhan/Documents/EventDetection/multiprocess'
+# batch_file_dir = '/home/ec2-user/yichuan_testing/upload_1_thread/Apr_weely_data'
+server_url = 'http://localhost:8080/api/v2/drivers'
+# tripIdcsv = '/home/ec2-user/yichuan_testing/tripid.csv'
+tripIdcsv = '/Users/omerorhan/Documents/EventDetection/multiprocess/tripid.csv'
 
 file_counter = 0
 file_names = []
-files_names_dict={}
+files_names_dict = {}
+
+
 def upload_bin_batch_v2():
     log = []
     driver_id_set = None
     currentDT = datetime.datetime.now()
-    print("start at "+ str(currentDT))
+    print("start at " + str(currentDT))
     # Get file names and directories
-    count=0
+    count = 0
+    driverCount = 0;
     for root, dirs, files in os.walk(batch_file_dir):
         if driver_id_set == None:
             driver_id_set = dirs
@@ -36,21 +37,28 @@ def upload_bin_batch_v2():
         if (count > 1000):
             break
         files.sort()
-        count = count+len(files)
+        count = count + len(files)
+        driverCount = driverCount + 1
         file_names.append(files)
-    input=[]
+    input = []
+    print("driverCount:" + str(driverCount))
     for idx in range(len(driver_id_set)):
         input.append(tuple((driver_id_set[idx], idx)))
 
     pool = Pool(5)
     result = pool.map(multi_run_wrapper, input)
-    print(len(result))
+
+    for item in result:
+        for item2 in item:
+            log.append(item2)
+
     return log
 
 def multi_run_wrapper(args):
-   return processDriver(*args)
+    return processDriver(*args)
 
-def processDriver(driver_id,idx):
+
+def processDriver(driver_id, idx):
     log = []
     if len(driver_id) > 0 and len(file_names[idx]) > 0:  # Ignore empty folders
         for jdx in range(len(file_names[idx])):
@@ -65,9 +73,12 @@ def processDriver(driver_id,idx):
                 log_row.append(file_names[idx][jdx])
                 log_row.append('Progress:')
                 log.append(log_row)
+                print("Driver index:" + str(idx))
     return log
 
     #   Batch process on V2
+
+
 log = upload_bin_batch_v2()
 log_dataframe = pd.DataFrame(log)
 log_dataframe.to_csv(tripIdcsv, index=False)
