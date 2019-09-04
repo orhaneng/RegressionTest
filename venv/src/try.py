@@ -19,7 +19,7 @@ compare = datacompy.Compare(
     df1_name='Original',  # Optional, defaults to 'df1'
     df2_name='New'  # Optional, defaults to 'df2'
 )
-print((compare.report(writer, sys.maxsize)))
+((compare.report(writer, sys.maxsize)))
 
 writer.save()
 
@@ -31,3 +31,6 @@ score.sort(reverse = True)
 fit = stats.norm.pdf(score, np.mean(score), np.std(score))  # this is a fitting indeed
 pl.plot(score, fit, '-o')
 pl.hist(score, density=True)  # use this to draw histogram of your data
+
+
+#print(df1[['driver_id']].drop_duplicates().shape)

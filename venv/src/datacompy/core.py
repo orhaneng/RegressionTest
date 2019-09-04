@@ -522,7 +522,8 @@ class Compare(object):
                                 "Number of rows in " + self.df1_name + " but not in " + self.df2_name,
                                 "Number of rows in " + self.df2_name + " but not in " + self.df1_name,
                                 "Number of rows with some compared columns unequal",
-                                "Number of rows with all compared columns equal"],
+                                "Number of rows with all compared columns equal",
+                                "Percentage of rows with some compared columns unequal"],
                 "Info": [match_on,
                          "Yes" if self._any_dupes else "No",
                          self.abs_tol,
@@ -531,10 +532,13 @@ class Compare(object):
                          self.df1_unq_rows.shape[0],
                          self.df2_unq_rows.shape[0],
                          self.intersect_rows.shape[0] - self.count_matching_rows(),
-                         self.count_matching_rows()],
+                         self.count_matching_rows(), str(round(
+                        ((self.intersect_rows.shape[0] - self.count_matching_rows()) * 100 / self.intersect_rows.shape[
+                            0]),
+                        2)) + "%"]
 
             }
-            , index=[0, 1, 2, 4, 5, 6, 7, 8, 9])
+            , index=[0, 1, 2, 4, 5, 6, 7, 8, 9, 10])
 
         df_row_summary.to_excel(writer, sheet_name='Summary', startrow=6, startcol=1)
 
@@ -567,6 +571,8 @@ class Compare(object):
         df_samplerow_unequal = pd.DataFrame(
             {"Sample Rows with Unequal Values": ""}, index=[0])
         df_samplerow_unequal.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=0, startcol=1)
+
+        effectedMaxDriverCount = 0;
         for column in self.column_stats:
             if not column["all_match"]:
                 any_mismatch = True
@@ -578,18 +584,47 @@ class Compare(object):
                         "# Unequal": column["unequal_cnt"],
                         "Max Diff": column["max_diff"],
                         "# Null Diff": column["null_diff"],
+                        "Effected/Total(%)": round(column["unequal_cnt"] * 100 / self.df1.shape[0], 2)
                     }
                 )
 
                 if column["unequal_cnt"] > 0:
                     match_sample.append(
                         self.sample_mismatch(column["column"], sample_count, for_display=True)
-
                     )
                     dframe = (self.sample_mismatch(column["column"], sample_count, for_display=True))
                     dframe.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=excelsheet_rowcount,
                                     startcol=1)
+                    print(dframe.columns)
+                    dframe_merged = pd.merge(dframe, self.df1, how='inner', on='start_time')
+                    dframe_merged.to_excel(writer, sheet_name='edited_summary', startrow=excelsheet_rowcount,
+                                           startcol=1)
+                    effectedMaxDriverCount = max(dframe_merged[['driver_id']].drop_duplicates().shape[0],
+                                                 effectedMaxDriverCount)
                     excelsheet_rowcount = excelsheet_rowcount + dframe.shape[0] + 3
+
+        uniqueDriverCountHasManipulation = \
+        self.df1[self.df1.phone_manipulation_count > 0][['driver_id']].drop_duplicates().shape[0]
+        df_row_driver_summary = pd.DataFrame(
+            {
+                "Driver Summary": ["Total drivers count",
+                                   "Effected drivers count",
+                                   "Effected Drivers  %",
+                                   "Total drivers have manipulation count",
+                                   "Effected Total drivers have manipulation %"],
+                "Result": [(self.df1[['driver_id']].drop_duplicates().shape[0]), (effectedMaxDriverCount), (
+                    round(((effectedMaxDriverCount / self.df1[['driver_id']].drop_duplicates().shape[0]) * 100), 2)),
+                           uniqueDriverCountHasManipulation,
+                           round(effectedMaxDriverCount * 100 / uniqueDriverCountHasManipulation, 2)]
+            }, index=[0, 1, 2, 3, 4])
+
+        df_row_driver_summary.to_excel(writer, sheet_name='Summary', startrow=32, startcol=1)
+
+        print("Total drivers count:" + str(self.df1[['driver_id']].drop_duplicates().shape[0]))
+        print("Effected drivers count:" + str(effectedMaxDriverCount))
+        print("Drivers effected %" + str(
+            round(((effectedMaxDriverCount / self.df1[['driver_id']].drop_duplicates().shape[0]) * 100), 2)))
+
         df_match_stats = pd.DataFrame()
         if any_mismatch:
             report += "Columns with Unequal Values or Types\n"
@@ -605,7 +640,7 @@ class Compare(object):
                     "{} dtype".format(self.df2_name),
                     "# Unequal",
                     "Max Diff",
-                    "# Null Diff",
+                    "# Null Diff"
                 ]
             ].to_string()
             self.createUnequalValuesChart(df_match_stats, writer)
