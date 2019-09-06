@@ -1,7 +1,4 @@
 """
-Created on Wed Jun 21 15:50:19 2017
-
-@author: yichuanniu
 """
 import os
 import pycurl
@@ -11,11 +8,11 @@ import json
 import datetime
 from multiprocessing import Pool
 
-batch_file_dir = '/Users/omerorhan/Documents/EventDetection/multiprocess'
-# batch_file_dir = '/home/ec2-user/yichuan_testing/upload_1_thread/Apr_weely_data'
+#batch_file_dir = '/Users/omerorhan/Documents/EventDetection/multiprocess'
+batch_file_dir = '/home/ec2-user/omer/tripfiles'
 server_url = 'http://localhost:8080/api/v2/drivers'
-# tripIdcsv = '/home/ec2-user/yichuan_testing/tripid.csv'
-tripIdcsv = '/Users/omerorhan/Documents/EventDetection/multiprocess/tripid.csv'
+tripIdcsv = '/home/ec2-user/yichuan_testing/tripid.csv'
+#tripIdcsv = '/Users/omerorhan/Documents/EventDetection/multiprocess/tripid.csv'
 
 file_counter = 0
 file_names = []
@@ -28,24 +25,21 @@ def upload_bin_batch_v2():
     currentDT = datetime.datetime.now()
     print("start at " + str(currentDT))
     # Get file names and directories
-    count = 0
     driverCount = 0;
     for root, dirs, files in os.walk(batch_file_dir):
         if driver_id_set == None:
             driver_id_set = dirs
             continue
-        if (count > 1000):
-            break
         files.sort()
-        count = count + len(files)
         driverCount = driverCount + 1
         file_names.append(files)
     input = []
-    print("driverCount:" + str(driverCount))
     for idx in range(len(driver_id_set)):
+        print(str(idx) + "/387")
+        #if idx == 5:
+        #    break
         input.append(tuple((driver_id_set[idx], idx)))
-
-    pool = Pool(5)
+    pool = Pool(8)
     result = pool.map(multi_run_wrapper, input)
 
     for item in result:
@@ -53,6 +47,7 @@ def upload_bin_batch_v2():
             log.append(item2)
 
     return log
+
 
 def multi_run_wrapper(args):
     return processDriver(*args)
@@ -66,6 +61,10 @@ def processDriver(driver_id, idx):
                 file_dir = batch_file_dir + '/' + driver_id + '/' + file_names[idx][jdx]
                 upload_url = server_url + '/' + driver_id + '/trips'
                 response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
+                if response.status_code != 200:
+                    print(response.status_code)
+                    print(response)
+                    print(file_dir)
                 response_json = json.loads(response.content)
                 log_row = []
                 log_row.append(str(response_json.get('tripId')))
@@ -79,6 +78,11 @@ def processDriver(driver_id, idx):
     #   Batch process on V2
 
 
+currentDT = datetime.datetime.now()
+print("start at " + str(currentDT))
 log = upload_bin_batch_v2()
 log_dataframe = pd.DataFrame(log)
 log_dataframe.to_csv(tripIdcsv, index=False)
+finishDT = datetime.datetime.now()
+print("start at " + str(currentDT))
+print("finish at " + str(finishDT))

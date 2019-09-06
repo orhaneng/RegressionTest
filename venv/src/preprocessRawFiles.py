@@ -9,14 +9,15 @@ f = []
 processcount = 0
 for (dirpath, dirnames, filenames) in walk(source_folder_path):
     for filename in filenames:
-        if filename.endswith('.bin_v2.gz'):
+        if filename.endswith('.bin_v2.gz') and filename.startswith('trip'):
             splitlist = filename.split(".")
             if len(splitlist) == 5:
                 driverid = splitlist[1]
                 if not os.path.exists(destination_folder_path + driverid):
                     os.mkdir(destination_folder_path + driverid)
-                else:
-                    copyfile(source_folder_path + filename,
-                             destination_folder_path + driverid + "/" + filename)
-                    print(source_folder_path + filename +" copied to " +destination_folder_path + driverid + "/" + filename)
+                copyfile(source_folder_path + filename,
+                         destination_folder_path + driverid + "/" + filename)
+                processcount=processcount+1
+                print(source_folder_path + filename +" copied to " +destination_folder_path + driverid + "/" + filename)
 
+print(str(processcount)+ "trips added")

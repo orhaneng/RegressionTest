@@ -16,18 +16,16 @@ def upload_bin_batch_v2(batch_file_dir, server_url):
     driver_id_set = None
     file_names = []
     currentDT = datetime.datetime.now()
-    print("start at "+ str(currentDT))
+    print("start at " + str(currentDT))
     # Get file names and directories
-    count=0
     for root, dirs, files in os.walk(batch_file_dir):
         if driver_id_set == None:
             driver_id_set = dirs
             continue
-        if (count > 1000):
-            break
         files.sort()
-        count = count + len(files)
         file_names.append(files)
+    print("file size:" + str(len(file_names)))
+    print(len(driver_id_set))
     #########   Upload multiple file of csv data with driver IDs     ##########
     total_files = 0
     file_counter = 0
@@ -40,6 +38,9 @@ def upload_bin_batch_v2(batch_file_dir, server_url):
 
     drivercount = 0
     for idx in range(len(driver_id_set)):
+        print(str(idx)+"/5")
+        if idx == 5:
+            break
         if len(driver_id_set[idx]) > 0 and len(file_names[idx]) > 0:  # Ignore empty folders
             driver_id = driver_id_set[idx]
             for jdx in range(len(file_names[idx])):
@@ -58,7 +59,7 @@ def upload_bin_batch_v2(batch_file_dir, server_url):
                     log.append(log_row)
     finishDT = datetime.datetime.now()
     print("start at " + str(currentDT))
-    print("start at " + str(finishDT))
+    print("finish at " + str(finishDT))
     return log
 
 

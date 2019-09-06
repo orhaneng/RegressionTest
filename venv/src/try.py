@@ -5,9 +5,9 @@ import sys
 writer = pd.ExcelWriter("/Users/omerorhan/Documents/EventDetection/regression_server/regression_report.xlsx", engine='xlsxwriter')
 
 df1 = pd.read_csv(
-    '/Users/omerorhan/Documents/EventDetection/regression_server/all_event_local_1000_old.csv')
+    '/Users/omerorhan/Documents/EventDetection/regression_server/388/all_event_local_old.csv')
 df1.drop(df1.columns[0], axis=1, inplace=True)
-df2 = pd.read_csv('/Users/omerorhan/Documents/EventDetection/regression_server/all_event_local_1000_new.csv')
+df2 = pd.read_csv('/Users/omerorhan/Documents/EventDetection/regression_server/388/all_event_local_new.csv')
 df2.drop(df2.columns[0], axis=1, inplace=True)
 
 compare = datacompy.Compare(
