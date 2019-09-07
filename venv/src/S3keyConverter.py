@@ -1,51 +1,31 @@
 import pandas as pd
+import mysql.connector
 
 
 def processCSV():
     exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/example.csv",
                               index_col=False)
-    result = "select driver_id, trip_id,s3_key from trip_file where "
-    query = []
-    count = 0
-    for index, row in exampleList.iterrows():
-        count = count + 1
-        query.append("(driver_id = '" + str(row[0]) + "' and trip_id='" + str(row[1]) + "') or ")
-        if count % 10 == 0:
-            break
-            print(count)
-
-    text_file = open("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/sql.txt", "w")
-    text_file.write(result + ''.join(query)[:-3])
-    text_file.close()
-
-
-def getS3Key():
-    import mysql.connector
     cnx = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
                                   host='production-aurora-mentor.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
                                   database='telematics')
-
-    text_file = open("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/sql.txt", "r").read()
     cursor = cnx.cursor()
-    cursor.execute(text_file)
     df_result = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key'])
-    for (driver_id, trip_id, s3key) in cursor:
-        df_result = df_result.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key}, ignore_index=True)
-    print(df_result.shape)
+    result = "select driver_id, trip_id,s3_key from trip_file where "
+    query = []
+    for i, row in exampleList.iterrows():
+        query.append("(driver_id = '" + str(row[0]) + "' and trip_id='" + str(row[1]) + "') or ")
+        if i % 1000 == 0:
+            print(i)
+            cursor.execute(result+"".join(query)[:-3])
+            for (driver_id, trip_id, s3key) in cursor:
+                df_result = df_result.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key},
+                                             ignore_index=True)
+                result = "select driver_id, trip_id,s3_key from trip_file where "
+                query = []
+    df_result.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/final.csv",
+                     index=False)
     cnx.close()
-    df_result.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/final.csv")
-
-
 processCSV()
-getS3Key()
-df = pd.DataFrame(columns=['A'])
-for i in range(5):
-    df = df.append({'A': i}, ignore_index=True)
-print(df)
-
-
-
-
 
 '''
 
