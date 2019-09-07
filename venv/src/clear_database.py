@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jun 29 14:19:36 2017
-
-@author: yichuanniu
 """
 
 import boto3
