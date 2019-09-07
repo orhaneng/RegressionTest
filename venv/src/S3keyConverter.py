@@ -2,7 +2,7 @@ import pandas as pd
 import mysql.connector
 
 
-def processCSV():
+def processCSVtoGetS3key():
     exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/example.csv",
                               index_col=False)
     cnx = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
@@ -25,7 +25,7 @@ def processCSV():
     df_result.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/final.csv",
                      index=False)
     cnx.close()
-processCSV()
+#processCSVtoGetS3key()
 
 '''
 
@@ -105,3 +105,10 @@ group by driver_id having count(*)>=15 order by RANDOM()  limit 600
 
 
 '''
+
+
+
+exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/final.csv",
+                              index_col=False)
+
+print(exampleList["driver_id"].unique().shape)
