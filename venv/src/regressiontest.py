@@ -4,11 +4,7 @@ from clear_database import clear_dynamodb
 from telematics_multiprocess import upload_bin_batch_v2
 from get_trip_from_regression import getTripsFromRegressionServer
 import pandas as pd
-
-
-batch_file_dir = '/Users/omerorhan/Documents/EventDetection/multiprocess'
-# batch_file_dir = '/home/ec2-user/omer/tripfiles'
-
+import comparision import compareTrips
 print("=======REGRESSION TEST==========")
 FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 
@@ -30,6 +26,8 @@ if sock.connect_ex(('localhost', 8000)) != 0:
 clear_dynamodb()
 # os.system("sh /Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/telematics-server/server.sh stop")
 # os.system("sh /Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/telematics-server/server.sh start")
-log_dataframe = upload_bin_batch_v2(batch_file_dir,se)
-result = getTripsFromRegressionServer()
-df_new = pd.merge(log_dataframe, result, on='trip_id')
+log_dataframe = upload_bin_batch_v2(FOLDER_PATH+"tripfiles/")
+
+trip_results = getTripsFromRegressionServer()
+combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
+combinedresult_s3key.to_csv(FOLDER_PATH+"tripresults/trip_results.csv")
