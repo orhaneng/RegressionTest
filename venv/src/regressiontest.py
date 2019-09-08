@@ -4,7 +4,7 @@ from clear_database import clear_dynamodb
 from telematics_multiprocess import upload_bin_batch_v2
 from get_trip_from_regression import getTripsFromRegressionServer
 import pandas as pd
-import comparision import compareTrips
+from comparision import compareTrips
 print("=======REGRESSION TEST==========")
 FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 
@@ -31,3 +31,4 @@ log_dataframe = upload_bin_batch_v2(FOLDER_PATH+"tripfiles/")
 trip_results = getTripsFromRegressionServer()
 combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 combinedresult_s3key.to_csv(FOLDER_PATH+"tripresults/trip_results.csv")
+compareTrips(FOLDER_PATH)
