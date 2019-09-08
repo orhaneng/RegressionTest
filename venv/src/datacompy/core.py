@@ -595,7 +595,6 @@ class Compare(object):
                     dframe = (self.sample_mismatch(column["column"], sample_count, for_display=True))
                     dframe.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=excelsheet_rowcount,
                                     startcol=1)
-                    print(dframe.columns)
                     dframe_merged = pd.merge(dframe, self.df1, how='inner', on='start_time')
                     dframe_merged.to_excel(writer, sheet_name='edited_summary', startrow=excelsheet_rowcount,
                                            startcol=1)
@@ -604,7 +603,7 @@ class Compare(object):
                     excelsheet_rowcount = excelsheet_rowcount + dframe.shape[0] + 3
 
         uniqueDriverCountHasManipulation = \
-        self.df1[self.df1.phone_manipulation_count > 0][['driver_id']].drop_duplicates().shape[0]
+            self.df1[self.df1.phone_manipulation_count > 0][['driver_id']].drop_duplicates().shape[0]
         df_row_driver_summary = pd.DataFrame(
             {
                 "Driver Summary": ["Total drivers count",
@@ -615,15 +614,11 @@ class Compare(object):
                 "Result": [(self.df1[['driver_id']].drop_duplicates().shape[0]), (effectedMaxDriverCount), (
                     round(((effectedMaxDriverCount / self.df1[['driver_id']].drop_duplicates().shape[0]) * 100), 2)),
                            uniqueDriverCountHasManipulation,
-                           round(effectedMaxDriverCount * 100 / uniqueDriverCountHasManipulation, 2)]
+                           (0 if uniqueDriverCountHasManipulation == 0 or effectedMaxDriverCount==0 else round(
+                               effectedMaxDriverCount * 100 / uniqueDriverCountHasManipulation, 2))]
             }, index=[0, 1, 2, 3, 4])
 
         df_row_driver_summary.to_excel(writer, sheet_name='Summary', startrow=32, startcol=1)
-
-        print("Total drivers count:" + str(self.df1[['driver_id']].drop_duplicates().shape[0]))
-        print("Effected drivers count:" + str(effectedMaxDriverCount))
-        print("Drivers effected %" + str(
-            round(((effectedMaxDriverCount / self.df1[['driver_id']].drop_duplicates().shape[0]) * 100), 2)))
 
         df_match_stats = pd.DataFrame()
         if any_mismatch:
@@ -681,9 +676,9 @@ class Compare(object):
         plt.yticks(y_pos, df_match_stats["Column"])
         plt.subplots_adjust(left=0.36, right=0.9, top=0.9, bottom=0.1)
         plt.title("Columns with Unequal Values or Types")
-        plt.savefig(os.path.dirname(os.path.realpath(__file__))+"/graphs/myplot.png", dpi=150)
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png", dpi=150)
         worksheet = writer.sheets['Graphs']
-        worksheet.insert_image('B2',os.path.dirname(os.path.realpath(__file__))+"/graphs/myplot.png")
+        worksheet.insert_image('B2', os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png")
         plt.close()
         # import os
         # os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
@@ -695,9 +690,9 @@ class Compare(object):
         pl.plot(score, fit, '-o')
         pl.hist(score, density=True)  # use this to draw histogram of your data
         pl.title("Score Density Chart")
-        plt.savefig(os.path.dirname(os.path.realpath(__file__))+"/graphs/mydensity.png", dpi=150)
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png", dpi=150)
         worksheet = writer.sheets['Graphs']
-        worksheet.insert_image('B29', os.path.dirname(os.path.realpath(__file__))+"/graphs/mydensity.png")
+        worksheet.insert_image('B29', os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png")
         plt.close()
         # import os
         # os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
