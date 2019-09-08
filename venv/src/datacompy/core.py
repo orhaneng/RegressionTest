@@ -681,9 +681,9 @@ class Compare(object):
         plt.yticks(y_pos, df_match_stats["Column"])
         plt.subplots_adjust(left=0.36, right=0.9, top=0.9, bottom=0.1)
         plt.title("Columns with Unequal Values or Types")
-        plt.savefig("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png", dpi=150)
+        plt.savefig(os.path.dirname(os.path.realpath(__file__))+"/graphs/myplot.png", dpi=150)
         worksheet = writer.sheets['Graphs']
-        worksheet.insert_image('B2', "/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
+        worksheet.insert_image('B2',os.path.dirname(os.path.realpath(__file__))+"/graphs/myplot.png")
         plt.close()
         # import os
         # os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
@@ -695,9 +695,9 @@ class Compare(object):
         pl.plot(score, fit, '-o')
         pl.hist(score, density=True)  # use this to draw histogram of your data
         pl.title("Score Density Chart")
-        pl.savefig("/Users/omerorhan/Documents/EventDetection/regression_server/mydensity.png", dpi=150)
+        plt.savefig(os.path.dirname(os.path.realpath(__file__))+"/graphs/mydensity.png", dpi=150)
         worksheet = writer.sheets['Graphs']
-        worksheet.insert_image('B29', "/Users/omerorhan/Documents/EventDetection/regression_server/mydensity.png")
+        worksheet.insert_image('B29', os.path.dirname(os.path.realpath(__file__))+"/graphs/mydensity.png")
         plt.close()
         # import os
         # os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
