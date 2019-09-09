@@ -1,23 +1,33 @@
-import os, sys
 import socket
+import os
+import sys
+import platform
+import subprocess
+import signal
+import time
+import shutil
+import errno
+import pandas as pd
+
+os.system("source activate base")
 from clear_database import clear_dynamodb
 from telematics_multiprocess import upload_bin_batch_v2
 from get_trip_from_regression import getTripsFromRegressionServer
-import pandas as pd
 from comparision import compareTrips
-import platform
-import subprocess, signal
-import time
-import shutil, errno
 
 print("=======REGRESSION TEST==========")
+
 
 def killoldtelematicsprocess():
     p = subprocess.Popen(['ps', '-ef'], stdout=subprocess.PIPE)
     out, err = p.communicate()
     for line in out.splitlines():
         if 'telematics' in str(line):
-            os.kill(int(str(line).split(' ')[4]), signal.SIGKILL)
+            if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
+                os.kill(int(str(line).split(' ')[2]), signal.SIGKILL)
+            else:
+                os.kill(int(str(line).split(' ')[4]), signal.SIGKILL)
+
 
 def regressiontest(FOLDER_PATH):
     if len(os.listdir(FOLDER_PATH + "build/")) > 0:
@@ -28,10 +38,10 @@ def regressiontest(FOLDER_PATH):
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if sock.connect_ex(('localhost', 8000)) != 0:
-        print("You can not continue without DynamoDB!")
+        print("can not be continued without DynamoDB!")
         exit()
     clear_dynamodb()
-    os.system("cp -rf "+FOLDER_PATH + "build/mainconfigfolder/config "+FOLDER_PATH + "build/telematics-server/")
+    os.system("cp -rf " + FOLDER_PATH + "build/mainconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
     killoldtelematicsprocess()
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
     time.sleep(6)
@@ -51,6 +61,3 @@ else:
     FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 
 regressiontest(FOLDER_PATH)
-
-
-
