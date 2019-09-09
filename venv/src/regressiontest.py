@@ -20,29 +20,47 @@ print("=======REGRESSION TEST==========")
 
 def killoldtelematicsprocess():
     p = subprocess.Popen(['ps', '-ef'], stdout=subprocess.PIPE)
+    print(p.pid)
     out, err = p.communicate()
+    index=0
+
     for line in out.splitlines():
+        print(line)
         if 'telematics' in str(line):
-            if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
-                os.kill(int(str(line).split(' ')[2]), signal.SIGKILL)
-            else:
-                os.kill(int(str(line).split(' ')[4]), signal.SIGKILL)
+            for item in str(line).split(' '):
+                # print(item)
+                if RepresentsInt(item):
+                    try:
+                        print(item + " is being killed")
+                        os.kill(int(item), signal.SIGKILL)
+                    except:
+                        continue
+
+def RepresentsInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
 
 
 def regressiontest(FOLDER_PATH):
-    if len(os.listdir(FOLDER_PATH + "build/")) > 0:
-        print("current(under build folder) version will be tested!")
-    else:
+    print("checking telematics folder under build directory")
+    if len(os.listdir(FOLDER_PATH + "build/")) == 0:
         print("can not be continued without build! Put telematics folder under the build directory!")
         exit()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print("checking DynamoDB connection")
     if sock.connect_ex(('localhost', 8000)) != 0:
         print("can not be continued without DynamoDB!")
         exit()
     clear_dynamodb()
+    print("config files are being copied!")
     os.system("cp -rf " + FOLDER_PATH + "build/mainconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
-    killoldtelematicsprocess()
+    print("killing old telematics processes!")
+    #killoldtelematicsprocess()
+    print("telematics is being started!")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
     time.sleep(6)
     log_dataframe = upload_bin_batch_v2(FOLDER_PATH + "tripfiles/")
@@ -60,4 +78,20 @@ if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
 else:
     FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 
-regressiontest(FOLDER_PATH)
+#regressiontest(FOLDER_PATH)
+#killoldtelematicsprocess()
+'''
+
+import subprocess
+
+proc1 = subprocess.Popen(['ps', '-ef'], stdout=subprocess.PIPE)
+proc2 = subprocess.Popen(['grep', 'telematics'], stdin=proc1.stdout,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+for item in proc2.communicate()[0].splitlines():
+    print(item)
+print(proc2.kill())
+print(proc2)
+os.kill(proc2.pid, signal.SIGKILL)
+proc1.stdout.close() # Allow proc1 to receive a SIGPIPE if proc2 exits.
+out, err = proc2.communicate()
+'''
