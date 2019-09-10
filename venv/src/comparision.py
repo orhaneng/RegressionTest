@@ -4,10 +4,10 @@ import sys
 
 def compareTrips(path):
     writer = pd.ExcelWriter(path+"reports/regression_report.xlsx", engine='xlsxwriter')
-    df1 = pd.read_csv(path+"/tripresults/maintripresult/trip_results.csv")
-    df1.drop(df1.columns[0], axis=1, inplace=True)
-    df2 = pd.read_csv(path+"/tripresults/trip_results.csv")
-    df2.drop(df2.columns[0], axis=1, inplace=True)
+    df1 = pd.read_csv(path+"/tripresults/maintripresult/trip_results.csv", index_col=False)
+    df1.drop(df1.columns[1], axis=1, inplace=True)
+    df2 = pd.read_csv(path+"/tripresults/trip_results.csv", index_col=False)
+    df2.drop(df2.columns[1], axis=1, inplace=True)
     compare = datacompy.Compare(
         df1,
         df2,

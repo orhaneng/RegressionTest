@@ -532,10 +532,10 @@ class Compare(object):
                          self.df1_unq_rows.shape[0],
                          self.df2_unq_rows.shape[0],
                          self.intersect_rows.shape[0] - self.count_matching_rows(),
-                         self.count_matching_rows(), str(round(
-                        ((self.intersect_rows.shape[0] - self.count_matching_rows()) * 100 / self.intersect_rows.shape[
-                            0]),
-                        2)) + "%"]
+                         self.count_matching_rows(),
+                         0
+                         #str(round( ((self.intersect_rows.shape[0] - self.count_matching_rows()) * 100 / self.intersect_rows.shape[0]),2)) + "%"
+                         ]
 
             }
             , index=[0, 1, 2, 4, 5, 6, 7, 8, 9, 10])
@@ -596,8 +596,8 @@ class Compare(object):
                     dframe.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=excelsheet_rowcount,
                                     startcol=1)
                     dframe_merged = pd.merge(dframe, self.df1, how='inner', on='start_time')
-                    dframe_merged.to_excel(writer, sheet_name='edited_summary', startrow=excelsheet_rowcount,
-                                           startcol=1)
+                    #dframe_merged.to_excel(writer, sheet_name='edited_summary', startrow=excelsheet_rowcount,
+                    #                       startcol=1)
                     effectedMaxDriverCount = max(dframe_merged[['driver_id']].drop_duplicates().shape[0],
                                                  effectedMaxDriverCount)
                     excelsheet_rowcount = excelsheet_rowcount + dframe.shape[0] + 3
@@ -680,9 +680,6 @@ class Compare(object):
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B2', os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png")
         plt.close()
-        # import os
-        # os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
-
     def createScoreDensityChart(self, df2, writer):
         score = list(df2['score'][df2.score != 'None'].apply(lambda x: int(x)))
         score.sort(reverse=True)
@@ -694,9 +691,6 @@ class Compare(object):
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B29', os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png")
         plt.close()
-        # import os
-        # os.remove("/Users/omerorhan/Documents/EventDetection/regression_server/myplot.png")
-
 
 def render(filename, *fields):
     """Renders out an individual template.  This basically just reads in a

@@ -17,8 +17,6 @@ def upload_bin_batch_v2(batch_file_dir):
     print("upload_bin_batch_v2")
     log = []
     driver_id_set = None
-    currentDT = datetime.datetime.now()
-    print("start at " + str(currentDT))
     # Get file names and directories
     driverCount = 0;
     for root, dirs, files in os.walk(batch_file_dir):
@@ -31,8 +29,8 @@ def upload_bin_batch_v2(batch_file_dir):
     input = []
     for idx in range(len(driver_id_set)):
         # print(str(idx) + "/387")
-        if idx == 5:
-           break
+        #if idx == 1:
+        #   break
         input.append(tuple((driver_id_set[idx], idx,batch_file_dir)))
     pool = Pool(3)
     result = pool.map(multi_run_wrapper, input)
@@ -54,7 +52,7 @@ def processDriver(driver_id, idx,batch_file_dir):
     if len(driver_id) > 0 and len(file_names[idx]) > 0:  # Ignore empty folders
         for jdx in range(len(file_names[idx])):
             if file_names[idx][jdx].endswith('.bin_v2.gz'):
-                file_dir = batch_file_dir + '/' + driver_id + '/' + file_names[idx][jdx]
+                file_dir = batch_file_dir + driver_id + '/' + file_names[idx][jdx]
                 upload_url = server_url + '/' + driver_id + '/trips'
                 response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
                 response_json = json.loads(response.content)
