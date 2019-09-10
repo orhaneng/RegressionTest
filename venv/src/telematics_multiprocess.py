@@ -9,13 +9,10 @@ import datetime
 from multiprocessing import Pool
 
 server_url = 'http://localhost:8080/api/v2/drivers'
-file_counter = 0
-file_names = []
-files_names_dict = {}
 
 def upload_bin_batch_v2(batch_file_dir):
-    print("upload_bin_batch_v2")
     log = []
+    file_names = []
     driver_id_set = None
     # Get file names and directories
     driverCount = 0;
@@ -31,7 +28,7 @@ def upload_bin_batch_v2(batch_file_dir):
         # print(str(idx) + "/387")
         #if idx == 1:
         #   break
-        input.append(tuple((driver_id_set[idx], idx,batch_file_dir)))
+        input.append(tuple((driver_id_set[idx], idx,batch_file_dir,file_names)))
     pool = Pool(3)
     result = pool.map(multi_run_wrapper, input)
 
@@ -47,7 +44,7 @@ def multi_run_wrapper(args):
     return processDriver(*args)
 
 
-def processDriver(driver_id, idx,batch_file_dir):
+def processDriver(driver_id, idx,batch_file_dir,file_names):
     log = []
     if len(driver_id) > 0 and len(file_names[idx]) > 0:  # Ignore empty folders
         for jdx in range(len(file_names[idx])):

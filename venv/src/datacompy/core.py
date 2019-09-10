@@ -26,7 +26,10 @@ import os
 import logging
 from datetime import datetime
 import pandas as pd
+import warnings
 import numpy as np
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import xlsxwriter as excelwriter
 import matplotlib.pyplot as plt
 
@@ -511,6 +514,8 @@ class Compare(object):
             "Yes" if self._any_dupes else "No",
         )
 
+        percentageofrowsunequal = round(zeroDivision((self.intersect_rows.shape[0] - self.count_matching_rows()) * 100,
+                                                     self.intersect_rows.shape[0]), 2)
         df_row_summary = pd.DataFrame(
             {
 
@@ -523,7 +528,7 @@ class Compare(object):
                                 "Number of rows in " + self.df2_name + " but not in " + self.df1_name,
                                 "Number of rows with some compared columns unequal",
                                 "Number of rows with all compared columns equal",
-                                "Percentage of rows with some compared columns unequal"],
+                                "Percentage of rows with some compared columns unequal %"],
                 "Info": [match_on,
                          "Yes" if self._any_dupes else "No",
                          self.abs_tol,
@@ -533,8 +538,7 @@ class Compare(object):
                          self.df2_unq_rows.shape[0],
                          self.intersect_rows.shape[0] - self.count_matching_rows(),
                          self.count_matching_rows(),
-                         0
-                         #str(round( ((self.intersect_rows.shape[0] - self.count_matching_rows()) * 100 / self.intersect_rows.shape[0]),2)) + "%"
+                         percentageofrowsunequal
                          ]
 
             }
@@ -596,7 +600,7 @@ class Compare(object):
                     dframe.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=excelsheet_rowcount,
                                     startcol=1)
                     dframe_merged = pd.merge(dframe, self.df1, how='inner', on='start_time')
-                    #dframe_merged.to_excel(writer, sheet_name='edited_summary', startrow=excelsheet_rowcount,
+                    # dframe_merged.to_excel(writer, sheet_name='edited_summary', startrow=excelsheet_rowcount,
                     #                       startcol=1)
                     effectedMaxDriverCount = max(dframe_merged[['driver_id']].drop_duplicates().shape[0],
                                                  effectedMaxDriverCount)
@@ -614,11 +618,11 @@ class Compare(object):
                 "Result": [(self.df1[['driver_id']].drop_duplicates().shape[0]), (effectedMaxDriverCount), (
                     round(((effectedMaxDriverCount / self.df1[['driver_id']].drop_duplicates().shape[0]) * 100), 2)),
                            uniqueDriverCountHasManipulation,
-                           (0 if uniqueDriverCountHasManipulation == 0 or effectedMaxDriverCount==0 else round(
+                           (0 if uniqueDriverCountHasManipulation == 0 or effectedMaxDriverCount == 0 else round(
                                effectedMaxDriverCount * 100 / uniqueDriverCountHasManipulation, 2))]
             }, index=[0, 1, 2, 3, 4])
 
-        df_row_driver_summary.to_excel(writer, sheet_name='Summary', startrow=32, startcol=1)
+        df_row_driver_summary.to_excel(writer, sheet_name='Summary', startrow=27, startcol=1)
 
         df_match_stats = pd.DataFrame()
         if any_mismatch:
@@ -648,7 +652,7 @@ class Compare(object):
             for sample in match_sample:
                 report += sample.to_string()
                 report += "\n\n"
-        df_match_stats.to_excel(writer, sheet_name='Summary', startrow=26, startcol=1)
+        df_match_stats.to_excel(writer, sheet_name='Summary', startrow=38, startcol=1)
 
         if self.df1_unq_rows.shape[0] > 0:
             report += "Sample Rows Only in {} (First 10 Columns)\n".format(self.df1_name)
@@ -680,6 +684,7 @@ class Compare(object):
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B2', os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png")
         plt.close()
+
     def createScoreDensityChart(self, df2, writer):
         score = list(df2['score'][df2.score != 'None'].apply(lambda x: int(x)))
         score.sort(reverse=True)
@@ -691,6 +696,14 @@ class Compare(object):
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B29', os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png")
         plt.close()
+
+
+def zeroDivision(x, y):
+    try:
+        return x / y
+    except ZeroDivisionError:
+        return 0
+
 
 def render(filename, *fields):
     """Renders out an individual template.  This basically just reads in a

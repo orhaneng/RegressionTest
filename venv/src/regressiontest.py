@@ -67,9 +67,9 @@ def regressiontest(FOLDER_PATH):
     print("config files are being copied!")
     os.system("cp -rf " + FOLDER_PATH + "build/mainconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
     print("killing old telematics processes!")
-    killoldtelematicsprocess()
+    #killoldtelematicsprocess()
     print("telematics is being started!")
-    os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
+    #os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
     time.sleep(10)
     log_dataframe = upload_bin_batch_v2(FOLDER_PATH + "tripfiles/")
     trip_results = getTripsFromRegressionServer()
@@ -77,11 +77,10 @@ def regressiontest(FOLDER_PATH):
     combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/trip_results.csv")
     compareTrips(FOLDER_PATH)
     print("Report is ready! Check reports folder!")
-    os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
+    #os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
     finishdt = datetime.datetime.now()
     print("start at " + str(currentDT))
     print("finish at " + str(finishdt))
-
 
 FOLDER_PATH = ""
 if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
