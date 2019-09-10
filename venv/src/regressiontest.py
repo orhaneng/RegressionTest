@@ -20,21 +20,28 @@ print("=======REGRESSION TEST==========")
 
 def killoldtelematicsprocess():
     p = subprocess.Popen(['ps', '-ef'], stdout=subprocess.PIPE)
-    print(p.pid)
     out, err = p.communicate()
-    index=0
-
+    index = 0
     for line in out.splitlines():
-        print(line)
+
         if 'telematics' in str(line):
-            for item in str(line).split(' '):
-                # print(item)
-                if RepresentsInt(item):
-                    try:
+            if platform.node() != 'dev-app-01-10-100-2-42.mentor.internal':
+                for item in str(line).split(' '):
+                    if RepresentsInt(item):
+                        index = index + 1
+                        try:
+                            if index == 2:
+                                print(item + " is being killed")
+                                os.kill(int(item), signal.SIGKILL)
+                        except:
+                            continue
+            else:
+                for item in str(line).split(' '):
+                    if RepresentsInt(item):
                         print(item + " is being killed")
                         os.kill(int(item), signal.SIGKILL)
-                    except:
-                        continue
+        index = 0
+
 
 def RepresentsInt(s):
     try:
@@ -59,7 +66,7 @@ def regressiontest(FOLDER_PATH):
     print("config files are being copied!")
     os.system("cp -rf " + FOLDER_PATH + "build/mainconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
     print("killing old telematics processes!")
-    #killoldtelematicsprocess()
+    killoldtelematicsprocess()
     print("telematics is being started!")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
     time.sleep(6)
@@ -77,21 +84,6 @@ if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
     FOLDER_PATH = "/home/ec2-user/regressiontest/"
 else:
     FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+regressiontest(FOLDER_PATH)
 
-#regressiontest(FOLDER_PATH)
-#killoldtelematicsprocess()
-'''
 
-import subprocess
-
-proc1 = subprocess.Popen(['ps', '-ef'], stdout=subprocess.PIPE)
-proc2 = subprocess.Popen(['grep', 'telematics'], stdin=proc1.stdout,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-for item in proc2.communicate()[0].splitlines():
-    print(item)
-print(proc2.kill())
-print(proc2)
-os.kill(proc2.pid, signal.SIGKILL)
-proc1.stdout.close() # Allow proc1 to receive a SIGPIPE if proc2 exits.
-out, err = proc2.communicate()
-'''
