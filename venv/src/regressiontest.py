@@ -12,11 +12,12 @@ import datetime
 
 os.system("source activate base")
 from clear_database import clear_dynamodb
-from telematics_multiprocess import upload_bin_batch_v2
+from telematics_multiprocess import uploadTripFilesandProcess
 from get_trip_from_regression import getTripsFromRegressionServer
 from comparision import compareTrips
 
 print("=======REGRESSION TEST==========")
+
 
 def killoldtelematicsprocess():
     p = subprocess.Popen(['ps', '-ef'], stdout=subprocess.PIPE)
@@ -43,6 +44,7 @@ def killoldtelematicsprocess():
                             os.kill(int(item), signal.SIGKILL)
         index = 0
 
+
 def RepresentsInt(s):
     try:
         int(s)
@@ -50,7 +52,11 @@ def RepresentsInt(s):
     except ValueError:
         return False
 
+
 def regressiontest(FOLDER_PATH):
+    print(
+        "Please select your process. (1-RegressionTest(Default) 2-RegressionUpdateMainTripresults 3-RegressionMapBase (default:1))")
+    regressionType = input("Selection:")
     print("checking telematics folder under build directory")
     currentDT = datetime.datetime.now()
     print("start at " + str(currentDT))
@@ -65,22 +71,35 @@ def regressiontest(FOLDER_PATH):
         exit()
     clear_dynamodb()
     print("config files are being copied!")
-    os.system("cp -rf " + FOLDER_PATH + "build/mainconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
+    if regressionType == "2":
+        os.system(
+            "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
+    else:
+        os.system(
+            "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
+
     print("killing old telematics processes!")
-    #killoldtelematicsprocess()
+    killoldtelematicsprocess()
     print("telematics is being started!")
-    #os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
+    os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
     time.sleep(10)
-    log_dataframe = upload_bin_batch_v2(FOLDER_PATH + "tripfiles/")
+    if regressionType == "3":
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/",3)
+    else:
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/", 8)
     trip_results = getTripsFromRegressionServer()
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
-    combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/trip_results.csv")
+    if regressionType == "2" or regressionType == "3":
+        combinedresult_s3key.to_csv(FOLDER_PATH + "maintripresult/trip_results.csv")
+    else:
+        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/trip_results.csv")
     compareTrips(FOLDER_PATH)
     print("Report is ready! Check reports folder!")
-    #os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
+    os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
     finishdt = datetime.datetime.now()
     print("start at " + str(currentDT))
     print("finish at " + str(finishdt))
+
 
 FOLDER_PATH = ""
 if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':

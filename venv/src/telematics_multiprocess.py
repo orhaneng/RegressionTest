@@ -10,7 +10,8 @@ from multiprocessing import Pool
 
 server_url = 'http://localhost:8080/api/v2/drivers'
 
-def upload_bin_batch_v2(batch_file_dir):
+
+def uploadTripFilesandProcess(batch_file_dir,threadCount):
     log = []
     file_names = []
     driver_id_set = None
@@ -26,10 +27,10 @@ def upload_bin_batch_v2(batch_file_dir):
     input = []
     for idx in range(len(driver_id_set)):
         # print(str(idx) + "/387")
-        #if idx == 1:
+        # if idx == 1:
         #   break
-        input.append(tuple((driver_id_set[idx], idx,batch_file_dir,file_names)))
-    pool = Pool(3)
+        input.append(tuple((driver_id_set[idx], idx, batch_file_dir, file_names)))
+    pool = Pool(threadCount)
     result = pool.map(multi_run_wrapper, input)
 
     for item in result:
@@ -44,7 +45,7 @@ def multi_run_wrapper(args):
     return processDriver(*args)
 
 
-def processDriver(driver_id, idx,batch_file_dir,file_names):
+def processDriver(driver_id, idx, batch_file_dir, file_names):
     log = []
     if len(driver_id) > 0 and len(file_names[idx]) > 0:  # Ignore empty folders
         for jdx in range(len(file_names[idx])):
@@ -57,5 +58,6 @@ def processDriver(driver_id, idx,batch_file_dir,file_names):
                 log_row.append(str(response_json.get('tripId')))
                 log_row.append(file_names[idx][jdx])
                 log.append(log_row)
-                print("Driver index:" + str(idx)+"/"+str(len(file_names[idx]))+" status:"+str(response.status_code))
+                print("Driver index:" + str(idx) + "/" + str(len(file_names[idx])) + " status:" + str(
+                    response.status_code))
     return log
