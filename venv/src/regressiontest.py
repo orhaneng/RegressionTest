@@ -86,11 +86,8 @@ def gettinginputs():
         print(
             "Select your process. (1-RegressionTest 2-RegressionUpdateMainTripresults 3-RegressionMapBase)")
         regressionType = RegressionTypeEnum(input("Selection:"))
-        if regressionType == RegressionTypeEnum.RegressionMapBase:
-            poolsize = PoolSize.POOL_100000
-        else:
-            print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000")
-            poolsize = PoolSize(input("Selection:"))
+        print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000")
+        poolsize = PoolSize(input("Selection:"))
     except ValueError:
         print("The selection is not valid!")
         exit()
