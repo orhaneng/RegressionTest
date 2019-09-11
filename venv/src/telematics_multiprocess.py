@@ -30,12 +30,17 @@ def uploadTripFilesandProcess(batch_file_dir,threadCount):
         # if idx == 1:
         #   break
         input.append(tuple((driver_id_set[idx], idx, batch_file_dir, file_names)))
-    pool = Pool(threadCount)
-    result = pool.map(multi_run_wrapper, input)
+    try:
+        pool = Pool(threadCount)
+        result = pool.map(multi_run_wrapper, input)
+        for item in result:
+            for item2 in item:
+                log.append(item2)
+    except:
+        print("Unsaved mapping data. Run RegressionMapBase step!")
+        exit()
 
-    for item in result:
-        for item2 in item:
-            log.append(item2)
+
     log_dataframe = pd.DataFrame(log)
     log_dataframe.columns = ['trip_id', 's3_key']
     return log_dataframe
@@ -54,6 +59,9 @@ def processDriver(driver_id, idx, batch_file_dir, file_names):
                 upload_url = server_url + '/' + driver_id + '/trips'
                 response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
                 response_json = json.loads(response.content)
+                if response_json.get('httpStatus') == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
+                    print("unsaved mapping data "+ response_json.get('reasonDetail'))
+                    raise Exception("unsaved mapping data")
                 log_row = []
                 log_row.append(str(response_json.get('tripId')))
                 log_row.append(file_names[idx][jdx])

@@ -74,7 +74,7 @@ def RepresentsInt(s):
 
 def checkDynamoDBProcess():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print("checking DynamoDB connection")
+    print("Checking DynamoDB connection")
     if sock.connect_ex(('localhost', 8000)) != 0:
         print("can not be continued without DynamoDB!")
         exit()
@@ -84,12 +84,12 @@ def checkDynamoDBProcess():
 def gettinginputs():
     try:
         print(
-            "Please select your process. (1-RegressionTest 2-RegressionUpdateMainTripresults 3-RegressionMapBase)")
+            "Select your process. (1-RegressionTest 2-RegressionUpdateMainTripresults 3-RegressionMapBase)")
         regressionType = RegressionTypeEnum(input("Selection:"))
         if regressionType == RegressionTypeEnum.RegressionMapBase:
             poolsize = PoolSize.POOL_100000
         else:
-            print("Please type your pool-size. (Options:1000, 10000, 20000, 50000, 100000")
+            print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000")
             poolsize = PoolSize(input("Selection:"))
     except ValueError:
         print("The selection is not valid!")
@@ -104,10 +104,10 @@ def folderFileProcess(regressionType):
         FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 
     if len(os.listdir(FOLDER_PATH + "build/")) == 0:
-        print("can not be continued without build! Put telematics folder under the build directory!")
+        print("Can not be continued without build! Put telematics folder under the build directory!")
         exit()
 
-    print("config files are being copied!")
+    print("Copying config files!")
     if regressionType == RegressionTypeEnum.RegressionMapBase:
         os.system(
             "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
@@ -122,16 +122,16 @@ def regressiontest():
 
     checkDynamoDBProcess()
 
-    print("checking telematics folder under build directory")
+    print("Checking telematics folder under build directory...")
     currentDT = datetime.datetime.now()
-    print("start at " + str(currentDT))
+    print("Start at " + str(currentDT))
 
     FOLDER_PATH = folderFileProcess(regressionType)
 
-    print("killing old telematics processes!")
+    print("Killing old telematics processes...")
     killoldtelematicsprocess()
 
-    print("telematics is being started!")
+    print("Starting telematics...")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
 
     time.sleep(10)
@@ -151,8 +151,8 @@ def regressiontest():
     print("Report is ready! Check reports folder!")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
     finishdt = datetime.datetime.now()
-    print("start at " + str(currentDT))
-    print("finish at " + str(finishdt))
+    print("Start at " + str(currentDT))
+    print("Finish at " + str(finishdt))
 
 
 regressiontest()
