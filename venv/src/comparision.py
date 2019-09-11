@@ -2,11 +2,11 @@ import datacompy, pandas as pd
 import xlsxwriter
 import sys
 
-def compareTrips(path):
-    writer = pd.ExcelWriter(path+"reports/regression_report.xlsx", engine='xlsxwriter')
-    df1 = pd.read_csv(path+"/tripresults/maintripresult/trip_results.csv", index_col=False)
+def compareTrips(path,poolsize):
+    writer = pd.ExcelWriter(path+"reports/"+poolsize.value+"/regression_report.xlsx", engine='xlsxwriter')
+    df1 = pd.read_csv(path+"/tripresults/maintripresult/"+poolsize.value+"/trip_results.csv", index_col=False)
     df1.drop(df1.columns[1], axis=1, inplace=True)
-    df2 = pd.read_csv(path+"/tripresults/trip_results.csv", index_col=False)
+    df2 = pd.read_csv(path+"/tripresults/"+poolsize.value+"/trip_results.csv", index_col=False)
     df2.drop(df2.columns[1], axis=1, inplace=True)
     compare = datacompy.Compare(
         df1,

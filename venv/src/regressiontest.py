@@ -9,12 +9,31 @@ import shutil
 import errno
 import pandas as pd
 import datetime
+import warnings
 
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
 os.system("source activate base")
 from clear_database import clear_dynamodb
 from telematics_multiprocess import uploadTripFilesandProcess
 from get_trip_from_regression import getTripsFromRegressionServer
 from comparision import compareTrips
+from enum import Enum
+
+
+class RegressionTypeEnum(Enum):
+    RegressionTest = "1"
+    RegressionUpdateMainTripresults = "2"
+    RegressionMapBase = "3"
+
+
+class PoolSize(Enum):
+    POOL_1000 = "1000"
+    POOL_10000 = "10000"
+    POOL_20000 = "20000"
+    POOL_50000 = "50000"
+    POOL_100000 = "100000"
+
 
 print("=======REGRESSION TEST==========")
 
@@ -53,47 +72,82 @@ def RepresentsInt(s):
         return False
 
 
-def regressiontest(FOLDER_PATH):
-    print(
-        "Please select your process. (1-RegressionTest(Default) 2-RegressionUpdateMainTripresults 3-RegressionMapBase (default:1))")
-    regressionType = input("Selection:")
-    print("checking telematics folder under build directory")
-    currentDT = datetime.datetime.now()
-    print("start at " + str(currentDT))
-    if len(os.listdir(FOLDER_PATH + "build/")) == 0:
-        print("can not be continued without build! Put telematics folder under the build directory!")
-        exit()
-
+def checkDynamoDBProcess():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print("checking DynamoDB connection")
     if sock.connect_ex(('localhost', 8000)) != 0:
         print("can not be continued without DynamoDB!")
         exit()
     clear_dynamodb()
+
+
+def gettinginputs():
+    try:
+        print(
+            "Please select your process. (1-RegressionTest 2-RegressionUpdateMainTripresults 3-RegressionMapBase)")
+        regressionType = RegressionTypeEnum(input("Selection:"))
+        if regressionType == RegressionTypeEnum.RegressionMapBase:
+            poolsize = PoolSize.POOL_100000
+        else:
+            print("Please type your pool-size. (Options:1000, 10000, 20000, 50000, 100000")
+            poolsize = PoolSize(input("Selection:"))
+    except ValueError:
+        print("The selection is not valid!")
+        exit()
+    return regressionType, poolsize
+
+
+def folderFileProcess(regressionType):
+    if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
+        FOLDER_PATH = "/home/ec2-user/regressiontest/"
+    else:
+        FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+
+    if len(os.listdir(FOLDER_PATH + "build/")) == 0:
+        print("can not be continued without build! Put telematics folder under the build directory!")
+        exit()
+
     print("config files are being copied!")
-    if regressionType == "2":
+    if regressionType == RegressionTypeEnum.RegressionMapBase:
         os.system(
             "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
     else:
         os.system(
             "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
+    return FOLDER_PATH
+
+
+def regressiontest():
+    regressionType, poolsize = gettinginputs()
+
+    checkDynamoDBProcess()
+
+    print("checking telematics folder under build directory")
+    currentDT = datetime.datetime.now()
+    print("start at " + str(currentDT))
+
+    FOLDER_PATH = folderFileProcess(regressionType)
 
     print("killing old telematics processes!")
     killoldtelematicsprocess()
+
     print("telematics is being started!")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
+
     time.sleep(10)
-    if regressionType == "3":
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/",3)
+    if regressionType == RegressionTypeEnum.RegressionMapBase:
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 3)
     else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/", 8)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 8)
     trip_results = getTripsFromRegressionServer()
+
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
-    if regressionType == "2" or regressionType == "3":
-        combinedresult_s3key.to_csv(FOLDER_PATH + "maintripresult/trip_results.csv")
+
+    if regressionType == RegressionTypeEnum.RegressionUpdateMainTripresults or regressionType == RegressionTypeEnum.RegressionMapBase:
+        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results.csv")
     else:
-        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/trip_results.csv")
-    compareTrips(FOLDER_PATH)
+        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results.csv")
+    compareTrips(FOLDER_PATH, poolsize)
     print("Report is ready! Check reports folder!")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
     finishdt = datetime.datetime.now()
@@ -101,9 +155,4 @@ def regressiontest(FOLDER_PATH):
     print("finish at " + str(finishdt))
 
 
-FOLDER_PATH = ""
-if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
-    FOLDER_PATH = "/home/ec2-user/regressiontest/"
-else:
-    FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
-regressiontest(FOLDER_PATH)
+regressiontest()
