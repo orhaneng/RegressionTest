@@ -1,12 +1,21 @@
 import datacompy, pandas as pd
 import xlsxwriter
 import sys
+from versioningfiles import VersionFile
+import os
 
-def compareTrips(path,poolsize):
-    writer = pd.ExcelWriter(path+"reports/"+poolsize.value+"/regression_report.xlsx", engine='xlsxwriter')
-    df1 = pd.read_csv(path+"tripresults/maintripresult/"+poolsize.value+"/trip_results.csv", index_col=False)
+
+def compareTrips(path, poolsize, version):
+    VersionFile(path + "reports/" + poolsize.value + "/", ".xlsx")
+    filepath =path + "reports/" + poolsize.value + "/regression_report" + version + ".xlsx"
+    writer = pd.ExcelWriter(filepath,
+                            engine='xlsxwriter')
+    df1 = pd.read_csv(path + "tripresults/maintripresult/" + poolsize.value + "/" + checkfolder(
+        path + "tripresults/maintripresult/" + poolsize.value), index_col=False)
     df1.drop(df1.columns[1], axis=1, inplace=True)
-    df2 = pd.read_csv(path+"tripresults/"+poolsize.value+"/trip_results.csv", index_col=False)
+    df2 = pd.read_csv(
+        path + "tripresults/" + poolsize.value + "/" + checkfolder(path + "tripresults/" + poolsize.value),
+        index_col=False)
     df2.drop(df2.columns[1], axis=1, inplace=True)
     compare = datacompy.Compare(
         df1,
@@ -19,3 +28,18 @@ def compareTrips(path,poolsize):
     )
     compare.report(writer, sys.maxsize)
     writer.save()
+    return filepath
+
+
+def checkfolder(path):
+    filenames = os.listdir(path)
+    count = 0
+    fname = ""
+    for filename in filenames:
+        if filename.endswith(".csv"):
+            count = count + 1
+            fname = filename
+    if count > 1:
+        print("ERROR! be allowed only one csv file under " + path)
+        exit()
+    return fname

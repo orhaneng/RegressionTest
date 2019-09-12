@@ -3,32 +3,16 @@ https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s26.html
 '''
 
 
-def VersionFile(file_source, file_spec):
+def VersionFile(file_dir, extension):
     import os, shutil
-
-    for root, dirs, files in os.walk(batch_file_dir):
-
-        if os.path.isfile(file_spec):
-            # Determine root filename so the extension doesn't get longer
-            n, e = os.path.splitext(file_spec)
-
-            # Is e an integer?
-            try:
-                num = int(e)
-                root = n
-            except ValueError:
-                root = file_spec
-            # Find next available file version
-            for i in range(10000):
-                new_file = '%s.%03d' % (root, i)
-                shutil.move(file_source, new_file)
-                return new_file
-        else:
-            shutil.move(file_source, file_spec)
-    return 0
-
-
-if __name__ == '__main__':
-    # test code (you will need a file named test.txt)
-    print(VersionFile('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/versiontest/',
-                      '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/versiontest/backup/test.txt'))
+    import glob
+    for file_name in os.listdir(file_dir):
+        if file_name.endswith(extension):
+            lastversion = 0
+            for file_namev in os.listdir(file_dir + "archive/"):
+                if file_namev.startswith(file_name):
+                    if len(file_namev.split(".")) > 3:
+                        lastversion = max(int(file_namev.split(".")[len(file_namev.split(".")) - 1]), lastversion)
+                    else:
+                        lastversion = max(0, lastversion)
+            shutil.move(file_dir + file_name, file_dir + "archive/" + file_name + "." + str(lastversion + 1))

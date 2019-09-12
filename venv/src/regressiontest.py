@@ -146,12 +146,15 @@ def regressiontest():
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 
     if regressionType == RegressionTypeEnum.RegressionUpdateMainTripresults or regressionType == RegressionTypeEnum.RegressionMapBase:
+        VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.to_csv(
-            FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + version + "/trip_results" + version + ".csv")
+            FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + ".csv")
     else:
+        VersionFile(FOLDER_PATH + "tripresults/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv")
-    compareTrips(FOLDER_PATH, poolsize)
+    comparisionpath = compareTrips(FOLDER_PATH, poolsize,version)
     print("Report is ready! Check reports folder!")
+    print(comparisionpath)
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
     finishdt = datetime.datetime.now()
     print("Start at " + str(currentDT))
