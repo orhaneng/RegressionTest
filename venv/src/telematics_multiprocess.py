@@ -11,7 +11,7 @@ from multiprocessing import Pool
 server_url = 'http://localhost:8080/api/v2/drivers'
 
 
-def uploadTripFilesandProcess(batch_file_dir,threadCount):
+def uploadTripFilesandProcess(batch_file_dir, threadCount):
     log = []
     file_names = []
     driver_id_set = None
@@ -40,7 +40,6 @@ def uploadTripFilesandProcess(batch_file_dir,threadCount):
         print("Unsaved mapping data. Run RegressionMapBase step!")
         exit()
 
-
     log_dataframe = pd.DataFrame(log)
     log_dataframe.columns = ['trip_id', 's3_key']
     return log_dataframe
@@ -59,8 +58,9 @@ def processDriver(driver_id, idx, batch_file_dir, file_names):
                 upload_url = server_url + '/' + driver_id + '/trips'
                 response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
                 response_json = json.loads(response.content)
-                if response_json.get('httpStatus') == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
-                    print("unsaved mapping data "+ response_json.get('reasonDetail'))
+                if response_json.get('httpStatus') == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get(
+                        'reasonDetail'):
+                    print("unsaved mapping data " + response_json.get('reasonDetail'))
                     raise Exception("unsaved mapping data")
                 log_row = []
                 log_row.append(str(response_json.get('tripId')))

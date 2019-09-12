@@ -1,3 +1,9 @@
+from clear_database import clear_dynamodb
+from telematics_multiprocess import uploadTripFilesandProcess
+from get_trip_from_regression import getTripsFromRegressionServer
+from comparision import compareTrips
+from enum import Enum
+from versioningfiles import VersionFile
 import socket
 import os
 import sys
@@ -10,15 +16,11 @@ import errno
 import pandas as pd
 import datetime
 import warnings
+import requests
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 os.system("source activate base")
-from clear_database import clear_dynamodb
-from telematics_multiprocess import uploadTripFilesandProcess
-from get_trip_from_regression import getTripsFromRegressionServer
-from comparision import compareTrips
-from enum import Enum
 
 
 class RegressionTypeEnum(Enum):
@@ -130,20 +132,24 @@ def regressiontest():
 
     print("Starting telematics...")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
-
     time.sleep(10)
+
+    version = requests.get("http://localhost:8081/version").content.decode("utf-8")
+    print("Current Telematics version:" + version)
+
     if regressionType == RegressionTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 3)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 1)
     else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 8)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 1)
     trip_results = getTripsFromRegressionServer()
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 
     if regressionType == RegressionTypeEnum.RegressionUpdateMainTripresults or regressionType == RegressionTypeEnum.RegressionMapBase:
-        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results.csv")
+        combinedresult_s3key.to_csv(
+            FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + version + "/trip_results" + version + ".csv")
     else:
-        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results.csv")
+        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv")
     compareTrips(FOLDER_PATH, poolsize)
     print("Report is ready! Check reports folder!")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")

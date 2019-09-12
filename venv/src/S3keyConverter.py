@@ -27,6 +27,13 @@ def processCSVtoGetS3key():
     cnx.close()
 #processCSVtoGetS3key()
 
+exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/final.csv",
+                              index_col=False)
+
+groupedList = exampleList.groupby("driver_id").count().reset_index()
+groupedList = groupedList.sort_values('trip_id', ascending=True)
+print(groupedList.sample(6).sum())
+
 '''
 
 
@@ -107,8 +114,3 @@ group by driver_id having count(*)>=15 order by RANDOM()  limit 600
 '''
 
 
-
-exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/final.csv",
-                              index_col=False)
-
-print(exampleList["driver_id"].unique().shape)
