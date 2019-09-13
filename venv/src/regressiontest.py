@@ -1,5 +1,5 @@
 from clear_database import clear_dynamodb
-from telematics_multiprocess import uploadTripFilesandProcess
+from telematics_multiprocessfilebythread import uploadTripFilesandProcess
 from get_trip_from_regression import getTripsFromRegressionServer
 from comparision import compareTrips
 from enum import Enum
