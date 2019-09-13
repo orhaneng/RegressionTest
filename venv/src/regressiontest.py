@@ -138,9 +138,9 @@ def regressiontest():
     print("Current Telematics version:" + version)
 
     if regressionType == RegressionTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 1)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 3)
     else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 1)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 8)
     trip_results = getTripsFromRegressionServer()
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')

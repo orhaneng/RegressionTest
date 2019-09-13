@@ -16,7 +16,7 @@ def processCSVtoGetS3key():
         query.append("(driver_id = '" + str(row[0]) + "' and trip_id='" + str(row[1]) + "') or ")
         if i % 1000 == 0:
             print(i)
-            cursor.execute(result+"".join(query)[:-3])
+            cursor.execute(result + "".join(query)[:-3])
             for (driver_id, trip_id, s3key) in cursor:
                 df_result = df_result.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key},
                                              ignore_index=True)
@@ -25,15 +25,38 @@ def processCSVtoGetS3key():
     df_result.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/final.csv",
                      index=False)
     cnx.close()
-#processCSVtoGetS3key()
+
+
+# processCSVtoGetS3key()
 
 exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/final.csv",
-                              index_col=False)
+                          index_col=False)
 
 groupedList = exampleList.groupby("driver_id").count().reset_index()
 groupedList = groupedList.sort_values('trip_id', ascending=True)
-print(groupedList.sample(6).sum())
+# print(groupedList.sample(6).sum())
+groupedList.columns = ['driver_id', 'count', 'count1']
+# print(groupedList[["driver_id",'count']].to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/countbydriver.csv",
+#                              index=False))
 
+
+groupedList[["driver_id", 'count']].to_csv(
+    "/Users/omerorhan/Documents/EventDetection/regression_server/dataconversion/countbydriver.csv", index=False)
+
+groupedList = groupedList[["driver_id", 'count']]
+# print(groupedList)
+
+data1000K = pd.DataFrame(columns=['driver_id', 'count'])
+count = 0
+new_row = {}
+for index, row in groupedList.iterrows():
+    count = count + row.loc['count']
+    new_row = {'driver_id': row.loc['driver_id'], 'count': row.loc['count']}
+    data1000K = data1000K.append(new_row, ignore_index=True)
+    if count > 1000:
+        break
+
+print(data1000K)
 '''
 
 
@@ -112,5 +135,3 @@ group by driver_id having count(*)>=15 order by RANDOM()  limit 600
 
 
 '''
-
-
