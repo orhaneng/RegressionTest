@@ -18,6 +18,7 @@ import datetime
 import warnings
 import requests
 
+
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 os.system("source activate base")
@@ -80,6 +81,7 @@ def checkDynamoDBProcess():
     if sock.connect_ex(('localhost', 8000)) != 0:
         print("can not be continued without DynamoDB!")
         exit()
+    print("Cleaning DynamoDB...")
     clear_dynamodb()
 
 
@@ -140,7 +142,7 @@ def regressiontest():
     if regressionType == RegressionTypeEnum.RegressionMapBase:
         log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 3)
     else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 8)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 10)
     trip_results = getTripsFromRegressionServer()
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')

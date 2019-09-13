@@ -7,7 +7,7 @@ import os
 
 def compareTrips(path, poolsize, version):
     VersionFile(path + "reports/" + poolsize.value + "/", ".xlsx")
-    filepath =path + "reports/" + poolsize.value + "/regression_report" + version + ".xlsx"
+    filepath = path + "reports/" + poolsize.value + "/regression_report" + version + ".xlsx"
     writer = pd.ExcelWriter(filepath,
                             engine='xlsxwriter')
     df1 = pd.read_csv(path + "tripresults/maintripresult/" + poolsize.value + "/" + checkfolder(

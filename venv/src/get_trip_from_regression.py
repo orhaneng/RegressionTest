@@ -51,7 +51,7 @@ def getTripsFromRegressionServer():
             score = "None"
             if item.get("scores") != None:
                 score = "None" if item["scores"]["L"][0]["M"].get("rating") == None else \
-                item["scores"]["L"][0]["M"]["score"]["N"]
+                    item["scores"]["L"][0]["M"]["score"]["N"]
             trips.loc[index] = [item["d_id"]["S"], item["t_id"]["S"], item["t_start"]["S"], score, []]
             index += 1
         count += page["Count"]
@@ -61,7 +61,7 @@ def getTripsFromRegressionServer():
                         "RIGHT_TURN", "LEFT_TURN", "SMOOTH_RIGHT_TURN", "SMOOTH_LEFT_TURN",
                         "HARD_ACCELERATION", "HARD_BRAKING", "HARD_CORNERING",
                         "CALL_INCOMING", "CALL_OUTGOING", "PHONE_MANIPULATION",
-                        "SPEEDING"];
+                        "SPEEDING"]
 
     result = pd.DataFrame(columns=["trip_id", "driver_id", "start_time", "score",
                                    "stop_count", "stop_duration",
