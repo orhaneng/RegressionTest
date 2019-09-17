@@ -599,7 +599,7 @@ class Compare(object):
                     dframe = (self.sample_mismatch(column["column"], sample_count, for_display=True))
                     dframe.to_excel(writer, sheet_name='Sample Rows with Unequal Values', startrow=excelsheet_rowcount,
                                     startcol=1)
-                    dframe_merged = pd.merge(dframe, self.df1, how='inner', on='start_time')
+                    dframe_merged = pd.merge(dframe, self.df1, how='inner', on='s3_key')
                     # dframe_merged.to_excel(writer, sheet_name='edited_summary', startrow=excelsheet_rowcount,
                     #                       startcol=1)
                     effectedMaxDriverCount = max(dframe_merged[['driver_id']].drop_duplicates().shape[0],

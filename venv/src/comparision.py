@@ -21,7 +21,7 @@ def compareTrips(path, poolsize, version):
     compare = datacompy.Compare(
         df1,
         df2,
-        join_columns='start_time',  # You can also specify a list of columns eg ['policyID','statecode']
+        join_columns='s3_key',  # You can also specify a list of columns eg ['policyID','statecode']
         abs_tol=0,  # Optional, defaults to 0
         rel_tol=0,  # Optional, defaults to 0
         df1_name='Original',  # Optional, defaults to 'df1'
@@ -39,7 +39,6 @@ def compareTrips(path, poolsize, version):
 
 
 def highlight_diff(data, color='yellow'):
-    print(type(data))
     attr = 'background-color: {}'.format(color)
     other = data.xs('Old', axis='columns', level=-1)
     return pd.DataFrame(np.where(data.ne(other, level=0), attr, ''),
@@ -70,4 +69,4 @@ def driverScoreComparision(writer, df1, df2):
     df_final.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
 
 
-#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
+compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
