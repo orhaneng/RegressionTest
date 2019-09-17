@@ -69,4 +69,4 @@ def driverScoreComparision(writer, df1, df2):
     df_final.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
 
 
-compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
+#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
