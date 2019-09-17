@@ -74,7 +74,7 @@ def divideDriversIntoPools():
             print(count)
         if count > 10000:
             break
-    print(data1000K)
+    print(data1000K.shape)
 
 
 divideDriversIntoPools()

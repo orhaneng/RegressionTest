@@ -6,15 +6,15 @@ import os
 
 
 def compareTrips(path, poolsize, version):
-    VersionFile(path + "reports/" + poolsize.value + "/", ".xlsx")
-    filepath = path + "reports/" + poolsize.value + "/regression_report" + version + ".xlsx"
+    VersionFile(path + "reports/" + poolsize + "/", ".xlsx")
+    filepath = path + "reports/" + poolsize + "/regression_report" + version + ".xlsx"
     writer = pd.ExcelWriter(filepath,
                             engine='xlsxwriter')
-    df1 = pd.read_csv(path + "tripresults/maintripresult/" + poolsize.value + "/" + checkfolder(
-        path + "tripresults/maintripresult/" + poolsize.value), index_col=False)
+    df1 = pd.read_csv(path + "tripresults/maintripresult/" + poolsize + "/" + checkfolder(
+        path + "tripresults/maintripresult/" + poolsize), index_col=False)
     df1.drop(df1.columns[1], axis=1, inplace=True)
     df2 = pd.read_csv(
-        path + "tripresults/" + poolsize.value + "/" + checkfolder(path + "tripresults/" + poolsize.value),
+        path + "tripresults/" + poolsize + "/" + checkfolder(path + "tripresults/" + poolsize),
         index_col=False)
     df2.drop(df2.columns[1], axis=1, inplace=True)
     compare = datacompy.Compare(
@@ -26,8 +26,10 @@ def compareTrips(path, poolsize, version):
         df1_name='Original',  # Optional, defaults to 'df1'
         df2_name='New'  # Optional, defaults to 'df2'
     )
+
     compare.report(writer, sys.maxsize)
     writer.save()
+
     return filepath
 
 
@@ -43,3 +45,6 @@ def checkfolder(path):
         print("ERROR! be allowed only one csv file under " + path)
         exit()
     return fname
+
+
+#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.1.6')

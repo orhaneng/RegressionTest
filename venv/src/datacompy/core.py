@@ -588,7 +588,7 @@ class Compare(object):
                         "# Unequal": column["unequal_cnt"],
                         "Max Diff": column["max_diff"],
                         "# Null Diff": column["null_diff"],
-                        "Effected/Total(%)": round(column["unequal_cnt"] * 100 / self.df1.shape[0], 2)
+                        "Affected/Total(%)": round(column["unequal_cnt"] * 100 / self.df1.shape[0], 2)
                     }
                 )
 
@@ -611,10 +611,10 @@ class Compare(object):
         df_row_driver_summary = pd.DataFrame(
             {
                 "Driver Summary": ["Total drivers count",
-                                   "Effected drivers count",
-                                   "Effected Drivers  %",
+                                   "Affected drivers count",
+                                   "Affected Drivers  %",
                                    "Total drivers have manipulation count",
-                                   "Effected Total drivers have manipulation %"],
+                                   "Affected Total drivers have manipulation %"],
                 "Result": [(self.df1[['driver_id']].drop_duplicates().shape[0]), (effectedMaxDriverCount), (
                     round(((effectedMaxDriverCount / self.df1[['driver_id']].drop_duplicates().shape[0]) * 100), 2)),
                            uniqueDriverCountHasManipulation,
@@ -622,7 +622,15 @@ class Compare(object):
                                effectedMaxDriverCount * 100 / uniqueDriverCountHasManipulation, 2))]
             }, index=[0, 1, 2, 3, 4])
 
-        df_row_driver_summary.to_excel(writer, sheet_name='Summary', startrow=27, startcol=1)
+        df_row_driver_summary.to_excel(writer, sheet_name='Driver Summary', startrow=2, startcol=1)
+
+        old_score = self.df1.groupby("driver_id", as_index=False)["score"].mean()
+        new_score = self.df2.groupby("driver_id", as_index=False)["score"].mean()
+        old_score.columns = ["driver_id", "old_score"]
+        new_score.columns = ["driver_id", "new_score"]
+
+        df_driverscore_comparision = pd.merge(old_score, new_score, on='driver_id', how='outer')
+        df_driverscore_comparision.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
 
         df_match_stats = pd.DataFrame()
         if any_mismatch:
@@ -652,7 +660,7 @@ class Compare(object):
             for sample in match_sample:
                 report += sample.to_string()
                 report += "\n\n"
-        df_match_stats.to_excel(writer, sheet_name='Summary', startrow=38, startcol=1)
+        df_match_stats.to_excel(writer, sheet_name='Summary', startrow=27, startcol=1)
 
         if self.df1_unq_rows.shape[0] > 0:
             report += "Sample Rows Only in {} (First 10 Columns)\n".format(self.df1_name)
@@ -671,7 +679,9 @@ class Compare(object):
             unq_count = min(sample_count, self.df2_unq_rows.shape[0])
             report += self.df2_unq_rows.sample(unq_count)[columns].to_string()
             report += "\n\n"
-        self.createScoreDensityChart(self.df2, writer)
+        # self.createScoreDensityChart(self.df2, writer)
+        self.createTripScoreDensityChart(writer)
+        self.createDriverScoreDensityChart(writer)
         return report
 
     def createUnequalValuesChart(self, df_match_stats, writer):
@@ -682,7 +692,7 @@ class Compare(object):
         plt.title("Columns with Unequal Values or Types")
         plt.savefig(os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png", dpi=150)
         worksheet = writer.sheets['Graphs']
-        worksheet.insert_image('B2', os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png")
+        worksheet.insert_image('B50', os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png")
         plt.close()
 
     def createScoreDensityChart(self, df2, writer):
@@ -690,13 +700,55 @@ class Compare(object):
         score.sort(reverse=True)
         fit = stats.norm.pdf(score, np.mean(score), np.std(score))  # this is a fitting indeed
         pl.plot(score, fit, '-o')
-        pl.hist(score, density=True)  # use this to draw histogram of your data
+        pl.hist(score, density=True, edgecolor='black', bins=int(180 / 5))  # use this to draw histogram of your data
         pl.title("Score Density Chart")
         plt.savefig(os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png", dpi=150)
         worksheet = writer.sheets['Graphs']
-        worksheet.insert_image('B29', os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png")
+        worksheet.insert_image('B2', os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png")
         plt.close()
 
+    def createTripScoreDensityChart(self, writer):
+        plt.subplot(2, 1, 1)
+        plt.hist(self.df1['score'], color='blue', edgecolor='black',
+                 bins=int(180 / 5))
+        plt.title('Histogram of Trip Counts(Old)/Score')
+        plt.xlabel('Score')
+        plt.ylabel('Trip Counts')
+        plt.subplot(2, 1, 2)
+        plt.hist(self.df2['score'], color='blue', edgecolor='black',
+                 bins=int(180 / 5))
+        plt.title('Histogram of Trip Counts(New)/Score')
+        plt.xlabel('Score')
+        plt.ylabel('Trip Counts')
+        plt.tight_layout()
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + "/graphs/tripshistogram.png", dpi=200)
+        worksheet = writer.sheets['Graphs']
+        worksheet.insert_image('B2', os.path.dirname(os.path.realpath(__file__)) + "/graphs/tripshistogram.png")
+        plt.close()
+
+    def createDriverScoreDensityChart(self, writer):
+
+        old_score = self.df1.groupby("driver_id", as_index=False)["score"].mean()
+        new_score = self.df2.groupby("driver_id", as_index=False)["score"].mean()
+        old_score.columns = ["driver_id", "old_score"]
+        new_score.columns = ["driver_id", "new_score"]
+        plt.subplot(2, 1, 1)
+        plt.hist(old_score['old_score'], color='orange', edgecolor='black',
+                 bins=int(180 / 5))
+        plt.title('Histogram of Driver Counts(Old)/Avg Score')
+        plt.xlabel('Avg Score')
+        plt.ylabel('Driver Count')
+        plt.subplot(2, 1, 2)
+        plt.hist(new_score['new_score'], color='orange', edgecolor='black',
+                 bins=int(180 / 5))
+        plt.title('Histogram of Driver Counts(New)/Avg Score')
+        plt.xlabel('Avg Score')
+        plt.ylabel('Driver Count')
+        plt.tight_layout()
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + "/graphs/driverscorehistogram.png", dpi=200)
+        worksheet = writer.sheets['Graphs']
+        worksheet.insert_image('B25', os.path.dirname(os.path.realpath(__file__)) + "/graphs/driverscorehistogram.png")
+        plt.close()
 
 def zeroDivision(x, y):
     try:

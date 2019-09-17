@@ -18,7 +18,6 @@ import datetime
 import warnings
 import requests
 
-
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 os.system("source activate base")
@@ -140,9 +139,9 @@ def regressiontest():
     print("Current Telematics version:" + version)
 
     if regressionType == RegressionTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 3)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 2, regressionType)
     else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 10)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 24, regressionType)
     trip_results = getTripsFromRegressionServer()
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
@@ -154,7 +153,7 @@ def regressiontest():
     else:
         VersionFile(FOLDER_PATH + "tripresults/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv")
-    comparisionpath = compareTrips(FOLDER_PATH, poolsize,version)
+    comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version)
     print("Report is ready! Check reports folder!")
     print(comparisionpath)
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
