@@ -1,5 +1,5 @@
 from clear_database import clear_dynamodb
-from telematics_multiprocessfilebythread import uploadTripFilesandProcess
+from telematicsmultiprocess import uploadTripFilesandProcess
 from get_trip_from_regression import getTripsFromRegressionServer
 from comparision import compareTrips
 from enum import Enum
@@ -81,13 +81,23 @@ def checkDynamoDBProcess():
         print("can not be continued without DynamoDB!")
         exit()
     print("Cleaning DynamoDB...")
-    clear_dynamodb()
+
+    dynamodbtry = 0
+    try:
+        clear_dynamodb()
+        dynamodbtry = dynamodbtry + 1
+    except:
+        if dynamodbtry < 3:
+            clear_dynamodb()
+        else:
+            print("check dynamodb!")
+            exit()
 
 
 def gettinginputs():
     try:
         print(
-            "Select your process. (1-RegressionTest 2-RegressionUpdateMainTripresults 3-RegressionMapBase)")
+            "Select your process type.. (1-RegressionTest 2-RegressionUpdateMainTripresults 3-RegressionMapBase)")
         regressionType = RegressionTypeEnum(input("Selection:"))
         print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000")
         poolsize = PoolSize(input("Selection:"))

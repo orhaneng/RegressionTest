@@ -1,9 +1,5 @@
-'''
-https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s26.html
-'''
-
-
 def VersionFile(file_dir, extension):
+    # https://www.oreilly.com/library/view/python-cookbook/0596001673/ch04s26.html
     import os, shutil
     import glob
     for file_name in os.listdir(file_dir):

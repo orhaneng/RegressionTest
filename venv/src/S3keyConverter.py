@@ -56,23 +56,26 @@ def processCSVtoGetS3key():
 
 # processCSVtoGetS3key()
 def divideDriversIntoPools():
-    PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
-    #PATH = "/home/ec2-user/regressiontest/"
+    #PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+    PATH = "/home/ec2-user/regressiontest/"
     exampleList = pd.read_csv(PATH + "dataconversion/final.csv", index_col=False)
     groupedList = exampleList.groupby("driver_id").count().reset_index().sort_values('trip_id', ascending=True)
     groupedList.columns = ['driver_id', 'count', 'count1']
     groupedList = groupedList[["driver_id", 'count']]
     data1000K = pd.DataFrame(columns=['driver_id', 'count'])
     count = 0
+    countdriver=0
     for index, row in groupedList.iterrows():
         count = count + row.loc['count']
+        countdriver = countdriver+1
         new_row = {'driver_id': row.loc['driver_id'], 'count': row.loc['count']}
         data1000K = data1000K.append(new_row, ignore_index=True)
-        #shutil.copytree(PATH + "tripfiles/100000/" + str(row.loc['driver_id']),
-        #                PATH + "tripfiles/10000/" + str(row.loc['driver_id']))
+        shutil.copytree(PATH + "tripfiles/100000/" + str(row.loc['driver_id']),
+                        PATH + "tripfiles/20000/" + str(row.loc['driver_id']))
         if count % 100 == 0:
             print(count)
-        if count > 10000:
+        print(countdriver)
+        if count > 20000:
             break
     print(data1000K.shape)
 
@@ -80,8 +83,6 @@ def divideDriversIntoPools():
 divideDriversIntoPools()
 
 '''
-
-
 select count(*) from trips
 where local_date >= '2019-08-01' and 
 local_date < '2019-09-01'
@@ -90,9 +91,6 @@ and status = 'SUCCESS'
 and is_driver = true
 and is_personal = false
 and driver_id=300003577
-
-
-
 
 
 select driver_id,trip_id from trips where driver_id in 
