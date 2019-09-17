@@ -3,6 +3,7 @@ import xlsxwriter
 import sys
 from versioningfiles import VersionFile
 import os
+import numpy as np
 
 
 def compareTrips(path, poolsize, version):
@@ -27,10 +28,22 @@ def compareTrips(path, poolsize, version):
         df2_name='New'  # Optional, defaults to 'df2'
     )
 
+    # old_score.columns = ["driver_id", "old_score"]
+    # new_score.columns = ["driver_id", "new_score"]
+
     compare.report(writer, sys.maxsize)
+    driverScoreComparision(writer, df1, df2)
     writer.save()
 
     return filepath
+
+
+def highlight_diff(data, color='yellow'):
+    print(type(data))
+    attr = 'background-color: {}'.format(color)
+    other = data.xs('Old', axis='columns', level=-1)
+    return pd.DataFrame(np.where(data.ne(other, level=0), attr, ''),
+                        index=data.index, columns=data.columns)
 
 
 def checkfolder(path):
@@ -47,4 +60,14 @@ def checkfolder(path):
     return fname
 
 
-#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.1.6')
+def driverScoreComparision(writer, df1, df2):
+    old_score = df1.groupby("driver_id", as_index=False)["score"].mean()
+    new_score = df2.groupby("driver_id", as_index=False)["score"].mean()
+    df_all = pd.concat([old_score.set_index('driver_id'), new_score.set_index('driver_id')],
+                       axis='columns', keys=['Old', 'New'])
+    df_final = df_all.swaplevel(axis='columns')[old_score.columns[1:]]
+    df_final = df_final.style.apply(highlight_diff, axis=None)
+    df_final.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
+
+
+#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')

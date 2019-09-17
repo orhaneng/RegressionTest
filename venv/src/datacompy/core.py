@@ -624,13 +624,7 @@ class Compare(object):
 
         df_row_driver_summary.to_excel(writer, sheet_name='Driver Summary', startrow=2, startcol=1)
 
-        old_score = self.df1.groupby("driver_id", as_index=False)["score"].mean()
-        new_score = self.df2.groupby("driver_id", as_index=False)["score"].mean()
-        old_score.columns = ["driver_id", "old_score"]
-        new_score.columns = ["driver_id", "new_score"]
 
-        df_driverscore_comparision = pd.merge(old_score, new_score, on='driver_id', how='outer')
-        df_driverscore_comparision.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
 
         df_match_stats = pd.DataFrame()
         if any_mismatch:
@@ -695,6 +689,13 @@ class Compare(object):
         worksheet.insert_image('B50', os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png")
         plt.close()
 
+    def highlight_diff(data2, color='yellow'):
+        print(type(data2))
+        attr = 'background-color: {}'.format(color)
+        other = data2.xs('Old', axis='columns', level=-1)
+        return pd.DataFrame(np.where(data2.ne(other, level=0), attr, ''),
+                            index=data2.index, columns=data2.columns)
+
     def createScoreDensityChart(self, df2, writer):
         score = list(df2['score'][df2.score != 'None'].apply(lambda x: int(x)))
         score.sort(reverse=True)
@@ -749,6 +750,7 @@ class Compare(object):
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B25', os.path.dirname(os.path.realpath(__file__)) + "/graphs/driverscorehistogram.png")
         plt.close()
+
 
 def zeroDivision(x, y):
     try:

@@ -71,12 +71,11 @@ def divideDriversIntoPools():
         new_row = {'driver_id': row.loc['driver_id'], 'count': row.loc['count']}
         data1000K = data1000K.append(new_row, ignore_index=True)
         shutil.copytree(PATH + "tripfiles/100000/" + str(row.loc['driver_id']),
-                        PATH + "tripfiles/20000/" + str(row.loc['driver_id']))
-        if count % 100 == 0:
-            print(count)
+                        PATH + "tripfiles/50000/" + str(row.loc['driver_id']))
         print(countdriver)
-        if count > 20000:
+        if count > 50000:
             break
+    print(count)
     print(data1000K.shape)
 
 
