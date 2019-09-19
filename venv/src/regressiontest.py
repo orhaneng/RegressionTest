@@ -132,7 +132,7 @@ def regressiontest():
 
     checkDynamoDBProcess()
 
-    print("Checking telematics folder under build directory...")
+    print("Checking telematics folder under build folder...")
     currentDT = datetime.datetime.now()
     print("Start at " + str(currentDT))
 

@@ -72,3 +72,12 @@ def driverScoreComparision(writer, df1, df2):
 
 
 #compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
+'''
+print("sdsd")
+for x in range(10):
+    import time
+    time.sleep(2)
+    sys.stdout.write('\r'+str(x))
+    sys.stdout.flush()
+
+'''

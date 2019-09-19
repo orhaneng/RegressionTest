@@ -2,12 +2,14 @@ import boto3
 import pandas as pd
 import datetime
 import requests
+import sys
 
 
 def getTripsFromRegressionServer():
     # Retrieve data from regression server
     client = boto3.client('dynamodb', endpoint_url='http://localhost:8000')
-    print("Processed events:", client.describe_table(TableName='tlm_trip').get("Table").get("ItemCount"), "trips")
+    eventcounts = client.describe_table(TableName='tlm_trip').get("Table").get("ItemCount")
+    print("Processed events:", eventcounts, "trips")
     paginator = client.get_paginator('scan')
     page_iterator = paginator.paginate(TableName='tlm_event', Limit=200)
     trip_events = {}
@@ -16,7 +18,9 @@ def getTripsFromRegressionServer():
         for item in page["Items"]:
             count += 1
             if count % 1000 == 0:
-                print("Processing event:", count)
+                sys.stdout.write('\r' + "Total trip count from server is:" + str(count) + "/" + str(eventcounts))
+                sys.stdout.flush()
+                #print("Processing event:", count)
             trip_id = item.get("t_id").get("S")
 
             if trip_events.get(trip_id) == None:
@@ -46,6 +50,7 @@ def getTripsFromRegressionServer():
     trips = pd.DataFrame(columns=["driver_id", "trip_id", "start_time", "score", "events"])
     count = 0
     index = 0
+    print()
     for page in page_iterator:
         for item in page["Items"]:
             score = "None"
@@ -55,7 +60,9 @@ def getTripsFromRegressionServer():
             trips.loc[index] = [item["d_id"]["S"], item["t_id"]["S"], item["t_start"]["S"], score, []]
             index += 1
         count += page["Count"]
-        print("Total trip count from server is:", str(count))
+        sys.stdout.write('\r' + "Total trip count from server is:" + str(count) + "/" + str(eventcounts))
+        sys.stdout.flush()
+        #print("Total trip count from server is:", str(count))
 
     event_definition = ["STOP", "START", "SMOOTH_STOP", "SMOOTH_START",
                         "RIGHT_TURN", "LEFT_TURN", "SMOOTH_RIGHT_TURN", "SMOOTH_LEFT_TURN",
@@ -79,9 +86,12 @@ def getTripsFromRegressionServer():
                                    "displayed_speeding_count", "displayed_speeding_duration"])
 
     result_index = 0
+    print()
     for index in list(trips.index):
         if result_index % 100 == 0:
-            print("Local processing:", result_index)
+            sys.stdout.write('\r' + "Local processing:" + str(result_index) + "/" + str(len(list(trips.index))))
+            sys.stdout.flush()
+            # print("Local processing:"+str( result_index))
         trip_id = trips.loc[index, "trip_id"]
         row = []
         row.append(trip_id)
@@ -99,6 +109,9 @@ def getTripsFromRegressionServer():
 
         result.loc[result_index] = row
         result_index += 1
+    sys.stdout.write('\r' + "Local processing:" + str(len(list(trips.index))) + "/" + str(len(list(trips.index))))
+    sys.stdout.flush()
+    print()
     result.sort_values(["driver_id", "start_time", ], inplace=True)
     return result
 
