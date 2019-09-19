@@ -685,13 +685,14 @@ class Compare(object):
 
     def createUnequalValuesChart(self, df_match_stats, writer):
         y_pos = np.arange(df_match_stats.shape[0])
-        plt.barh(y_pos, df_match_stats['# Unequal'])
+        plt.barh(y_pos, df_match_stats['# Unequal'],height=0.3, edgecolor='black')
         plt.yticks(y_pos, df_match_stats["Column"])
         plt.subplots_adjust(left=0.36, right=0.9, top=0.9, bottom=0.1)
         plt.title("Columns with Unequal Values or Types")
         plt.savefig(os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png", dpi=150)
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B50', os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png")
+
         plt.close()
 
     def createScoreDensityChart(self, df2, writer):
