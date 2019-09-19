@@ -4,10 +4,12 @@ import sys
 from versioningfiles import VersionFile
 import os
 import numpy as np
-
+import datetime
 
 def compareTrips(path, poolsize, version):
     VersionFile(path + "reports/" + poolsize + "/", ".xlsx")
+
+
     filepath = path + "reports/" + poolsize + "/regression_report" + version + ".xlsx"
     writer = pd.ExcelWriter(filepath,
                             engine='xlsxwriter')
@@ -28,8 +30,9 @@ def compareTrips(path, poolsize, version):
         df2_name='New'  # Optional, defaults to 'df2'
     )
 
-    # old_score.columns = ["driver_id", "old_score"]
-    # new_score.columns = ["driver_id", "new_score"]
+    versions = pd.DataFrame({"Version Type": ["Base Version", "New Version","Report Created Time"], "Version": [checkfolder(
+        path + "tripresults/maintripresult/" + poolsize),checkfolder(path + "tripresults/" + poolsize),str(datetime.datetime.now())]})
+    versions.to_excel(writer, sheet_name='Summary', startrow=1, startcol=1)
 
     compare.report(writer, sys.maxsize)
     driverScoreComparision(writer, df1, df2)
@@ -69,4 +72,4 @@ def driverScoreComparision(writer, df1, df2):
     df_final.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
 
 
-#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
+compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
