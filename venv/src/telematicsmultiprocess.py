@@ -25,14 +25,18 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionType):
         driverCount = driverCount + 1
         file_names.append(files)
     input = []
-
+    driverlist = []
+    print(str(len(driver_id_set))+ " number of drivers will be processed.")
     for idx in range(len(driver_id_set)):
+        if idx < 300:
+            continue
+        driverlist.append(driver_id_set[idx])
         if len(file_names[idx]) > 0:
             for jdx in range(len(file_names[idx])):
                 if file_names[idx][jdx].endswith('.bin_v2.gz'):
                     input.append(
                         tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx, regressionType)))
-
+    print(driverlist)
     pool = Pool(threadCount)
     try:
         result = pool.map(multi_run_wrapper, input)
