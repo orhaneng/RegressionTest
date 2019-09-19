@@ -7,6 +7,8 @@ import requests
 import json
 import datetime
 from multiprocessing import Pool
+import tqdm
+import time
 
 server_url = 'http://localhost:8080/api/v2/drivers'
 
@@ -26,9 +28,8 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionType):
         file_names.append(files)
     input = []
     driverlist = []
-    print(str(len(driver_id_set))+ " number of drivers will be processed.")
     for idx in range(len(driver_id_set)):
-        if idx < 300:
+        if idx > 3:
             continue
         driverlist.append(driver_id_set[idx])
         if len(file_names[idx]) > 0:
@@ -36,12 +37,14 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionType):
                 if file_names[idx][jdx].endswith('.bin_v2.gz'):
                     input.append(
                         tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx, regressionType)))
-    print(driverlist)
+    # print(driverlist)
+    print("Processing trips...")
     pool = Pool(threadCount)
     try:
-        result = pool.map(multi_run_wrapper, input)
-        for item in result:
-            log.append(item)
+        with pool as p:
+            result = list(tqdm.tqdm(p.imap(multi_run_wrapper, input), total=len(input)))
+            [log.append(item) for item in result]
+
     except Exception as e:
         print(e)
         pool.terminate()
@@ -63,8 +66,8 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressiontype
     response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
     response_json = json.loads(response.content)
 
-    print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
-        response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
+    # print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
+    #    response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
     if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get(
             'reasonDetail'):
         print("unsaved mapping data " + response_json.get('reasonDetail'))
