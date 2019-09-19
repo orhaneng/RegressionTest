@@ -464,7 +464,7 @@ class Compare(object):
         )
 
         report += df_header[["DataFrame", "Columns", "Rows"]].to_string()
-        df_header.to_excel(writer, sheet_name='Summary', startcol=6)
+        df_header.to_excel(writer, sheet_name='Summary', startcol=6 , startrow=6)
         df_graph = pd.DataFrame(
             {"Graphs": ""}, index=[0])
         df_graph.to_excel(writer, sheet_name='Graphs', startrow=0, startcol=1)
@@ -492,7 +492,7 @@ class Compare(object):
                           len(self.df2_unq_columns())]
             }
             , index=[0, 1, 2])
-        df_column_summary.to_excel(writer, sheet_name='Summary', startcol=1)
+        df_column_summary.to_excel(writer, sheet_name='Summary', startrow=12, startcol=6)
 
         # Row Summary
         if self.on_index:
@@ -550,8 +550,8 @@ class Compare(object):
                        percentageofrowsunequal]
              }, index=[0, 1, 2])
 
-        df_row_summary.to_excel(writer, sheet_name='Summary', startrow=6, startcol=1)
-        df_trip_summary.to_excel(writer, sheet_name='Summary', startrow=6, startcol=6)
+        df_row_summary.to_excel(writer, sheet_name='Summary', startrow=18, startcol=1)
+        df_trip_summary.to_excel(writer, sheet_name='Summary', startcol=1, startrow=6)
 
         # Column Matching
         cnt_intersect = self.intersect_rows.shape[0]
@@ -573,7 +573,7 @@ class Compare(object):
                           sum([col["unequal_cnt"] for col in self.column_stats])]
             }
             , index=[0, 1, 2])
-        df_column_comparision.to_excel(writer, sheet_name='Summary', startrow=18, startcol=1)
+        df_column_comparision.to_excel(writer, sheet_name='Summary', startrow=12, startcol=1)
 
         match_stats = []
         match_sample = []
@@ -659,7 +659,7 @@ class Compare(object):
             for sample in match_sample:
                 report += sample.to_string()
                 report += "\n\n"
-        df_match_stats.to_excel(writer, sheet_name='Summary', startrow=27, startcol=1)
+        df_match_stats.to_excel(writer, sheet_name='Summary', startrow=33, startcol=1)
 
         if self.df1_unq_rows.shape[0] > 0:
             report += "Sample Rows Only in {} (First 10 Columns)\n".format(self.df1_name)
