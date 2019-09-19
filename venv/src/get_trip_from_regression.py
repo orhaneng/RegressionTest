@@ -50,7 +50,8 @@ def getTripsFromRegressionServer():
     trips = pd.DataFrame(columns=["driver_id", "trip_id", "start_time", "score", "events"])
     count = 0
     index = 0
-    print()
+    if count > 1000:
+        print()
     for page in page_iterator:
         for item in page["Items"]:
             score = "None"

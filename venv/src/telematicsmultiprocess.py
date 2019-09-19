@@ -29,8 +29,8 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionType):
     input = []
     driverlist = []
     for idx in range(len(driver_id_set)):
-        if idx > 3:
-            continue
+        #if idx > 3:
+        #    continue
         driverlist.append(driver_id_set[idx])
         if len(file_names[idx]) > 0:
             for jdx in range(len(file_names[idx])):

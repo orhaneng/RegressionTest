@@ -97,7 +97,7 @@ def checkDynamoDBProcess():
 def gettinginputs():
     try:
         print(
-            "Select your process type.. (1-RegressionTest 2-RegressionUpdateMainTripresults 3-RegressionMapBase)")
+            "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
         regressionType = RegressionTypeEnum(input("Selection:"))
         print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000")
         poolsize = PoolSize(input("Selection:"))
@@ -138,7 +138,7 @@ def regressiontest():
 
     FOLDER_PATH = folderFileProcess(regressionType)
 
-    print("Killing old telematics processes...")
+    print("Killing old telematics processes if exits...")
     killoldtelematicsprocess()
 
     print("Starting telematics...")
