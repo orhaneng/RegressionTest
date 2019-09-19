@@ -34,7 +34,7 @@ def compareTrips(path, poolsize, version):
     compare.report(writer, sys.maxsize)
     driverScoreComparision(writer, df1, df2)
     writer.save()
-
+    #deneme
     return filepath
 
 
