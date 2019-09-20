@@ -188,7 +188,7 @@ def delete_mentor_dynamodb_tables():
 def clear_dynamodb():
     delete_mentor_dynamodb_tables()
     create_mentor_dynamodb_tables()
-    print("DyanmoDB is clear.")
+    print("DynamoDB is clear.")
 
 
 def clear_postgresdb():

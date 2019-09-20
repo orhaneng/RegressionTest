@@ -1,9 +1,10 @@
-from clear_database import clear_dynamodb
-from telematicsmultiprocess import uploadTripFilesandProcess
-from get_trip_from_regression import getTripsFromRegressionServer
-from comparision import compareTrips
+from src.clear_database import clear_dynamodb
+from src.telematicsmultiprocess import uploadTripFilesandProcess
+from src.get_trip_from_regression import getTripsFromRegressionServer
+from src.comparision import compareTrips
+from src.comparision import checkfolder
 from enum import Enum
-from versioningfiles import VersionFile
+from src.versioningfiles import VersionFile
 import socket
 import os
 import sys
@@ -98,16 +99,16 @@ def gettinginputs():
     try:
         print(
             "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
-        regressionType = RegressionTypeEnum(input("Selection:"))
-        print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000")
-        poolsize = PoolSize(input("Selection:"))
+        regressionType = "1"#RegressionTypeEnum(input("Selection:"))
+        print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
+        poolsize =PoolSize.POOL_1000# PoolSize(input("Selection:"))
     except ValueError:
         print("The selection is not valid!")
         exit()
     return regressionType, poolsize
 
 
-def folderFileProcess(regressionType):
+def controlfolderfileprocess(regressionType):
     if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
         FOLDER_PATH = "/home/ec2-user/regressiontest/"
     else:
@@ -128,15 +129,18 @@ def folderFileProcess(regressionType):
 
 
 def regressiontest():
+    currentDT = datetime.datetime.now()
+    print("Starting Time:" + str(currentDT))
+    print("Be sure to put your new telematics folder in /home/ec2-user/regressiontest/build !!")
+
     regressionType, poolsize = gettinginputs()
 
     checkDynamoDBProcess()
 
-    print("Checking telematics folder under build folder...")
-    currentDT = datetime.datetime.now()
-    print("Start at " + str(currentDT))
+    print("Checking telematics folder in build folder...")
 
-    FOLDER_PATH = folderFileProcess(regressionType)
+
+    FOLDER_PATH = controlfolderfileprocess(regressionType)
 
     print("Killing old telematics processes if exits...")
     killoldtelematicsprocess()
@@ -146,6 +150,7 @@ def regressiontest():
     time.sleep(10)
 
     version = requests.get("http://localhost:8081/version").content.decode("utf-8")
+    print("Base Telematics version:",checkfolder(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value).split("trip_results")[1].split(".csv")[0])
     print("Current Telematics version:" + version)
 
     if regressionType == RegressionTypeEnum.RegressionMapBase:

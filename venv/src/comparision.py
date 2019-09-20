@@ -1,7 +1,7 @@
 import datacompy, pandas as pd
 import xlsxwriter
 import sys
-from versioningfiles import VersionFile
+from src.versioningfiles import VersionFile
 import os
 import numpy as np
 import datetime
@@ -60,7 +60,6 @@ def checkfolder(path):
         exit()
     return fname
 
-
 def driverScoreComparision(writer, df1, df2):
     old_score = df1.groupby("driver_id", as_index=False)["score"].mean()
     new_score = df2.groupby("driver_id", as_index=False)["score"].mean()
@@ -72,12 +71,3 @@ def driverScoreComparision(writer, df1, df2):
 
 
 #compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
-'''
-print("sdsd")
-for x in range(10):
-    import time
-    time.sleep(2)
-    sys.stdout.write('\r'+str(x))
-    sys.stdout.flush()
-
-'''
