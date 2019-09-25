@@ -76,9 +76,8 @@ def calculatedistancestopped(speedzerodf):
         snaploca.append((row['snaplat'], row['snaplon']))
     mergerawlat, mergerawlon = averageGeolocation(rawloca)
     mergesnaplat, mergesnaplon = averageGeolocation(snaploca)
-    print(distance(mergerawlat, mergerawlon, mergesnaplat, mergerawlon))
-    print("start="+str(rawloca[0][0]))
-    print("end="+str(rawloca[len(rawloca)-1][0]))
+    print(round(distance(mergerawlat, mergerawlon, mergesnaplat, mergerawlon),2))
+    print("start="+str(rawloca[0][0])+"--"+"end="+str(rawloca[len(rawloca)-1][0]))
 
 # print(great_circle(-121.96847, 37.35153, 	-121.9683762,37.351532))
 # print(distance(-121.96847, 37.35153, 	-121.9683762,37.351532))
@@ -99,6 +98,8 @@ for index, row in datasetrawsnapped.iterrows():
     if start and row["speed"] > 0:
         calculatedistancestopped(speedzerodf)
         start= False
+        speedzerodf = pd.DataFrame(columns=['rawlat', 'rawlon', 'snaplat', 'snaplon', 'speed'])
+
     distan = round(distance(float(row['rawlon']), float(row['rawlat']), float(row['snaplon']), float(row['snaplat'])),
                    2)
     datasetrawsnapped["distance"][index] = distan
