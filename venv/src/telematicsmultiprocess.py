@@ -29,7 +29,7 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionType):
     input = []
     driverlist = []
     for idx in range(len(driver_id_set)):
-        #if idx > 3:
+        # if idx > 3:
         #    continue
         driverlist.append(driver_id_set[idx])
         if len(file_names[idx]) > 0:
@@ -72,8 +72,10 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressiontype
             'reasonDetail'):
         print("unsaved mapping data " + response_json.get('reasonDetail'))
         raise Exception("unsaved mapping data")
-    if response.status_code != 200 and regressiontype.value == "3":
-        print("response is not 200")
+    if response.status_code != 200 and regressiontype.value == "3" and regressiontype.value == "2":
+        print(
+            "response is not 200" + "driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
+                response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
         raise Exception(response.reason)
 
     log_row = []

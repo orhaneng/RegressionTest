@@ -1,4 +1,5 @@
-import datacompy, pandas as pd
+from src.datacompy.core import *
+import pandas as pd
 import xlsxwriter
 import sys
 from src.versioningfiles import VersionFile
@@ -6,9 +7,9 @@ import os
 import numpy as np
 import datetime
 
+
 def compareTrips(path, poolsize, version):
     VersionFile(path + "reports/" + poolsize + "/", ".xlsx")
-
 
     filepath = path + "reports/" + poolsize + "/regression_report" + version + ".xlsx"
     writer = pd.ExcelWriter(filepath,
@@ -20,7 +21,7 @@ def compareTrips(path, poolsize, version):
         path + "tripresults/" + poolsize + "/" + checkfolder(path + "tripresults/" + poolsize),
         index_col=False)
     df2.drop(df2.columns[1], axis=1, inplace=True)
-    compare = datacompy.Compare(
+    compare = Compare(
         df1,
         df2,
         join_columns='s3_key',  # You can also specify a list of columns eg ['policyID','statecode']
@@ -30,8 +31,10 @@ def compareTrips(path, poolsize, version):
         df2_name='New'  # Optional, defaults to 'df2'
     )
 
-    versions = pd.DataFrame({"Version Type": ["Base Version", "New Version","Report Created Time"], "Version": [checkfolder(
-        path + "tripresults/maintripresult/" + poolsize),checkfolder(path + "tripresults/" + poolsize),str(datetime.datetime.now())]})
+    versions = pd.DataFrame(
+        {"Version Type": ["Base Version", "New Version", "Report Created Time"], "Version": [checkfolder(
+            path + "tripresults/maintripresult/" + poolsize), checkfolder(path + "tripresults/" + poolsize),
+            str(datetime.datetime.now())]})
     versions.to_excel(writer, sheet_name='Summary', startrow=1, startcol=1)
 
     compare.report(writer, sys.maxsize)
@@ -60,6 +63,7 @@ def checkfolder(path):
         exit()
     return fname
 
+
 def driverScoreComparision(writer, df1, df2):
     old_score = df1.groupby("driver_id", as_index=False)["score"].mean()
     new_score = df2.groupby("driver_id", as_index=False)["score"].mean()
@@ -69,5 +73,4 @@ def driverScoreComparision(writer, df1, df2):
     df_final = df_final.style.apply(highlight_diff, axis=None)
     df_final.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
 
-
-#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
+# compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')

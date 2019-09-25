@@ -99,9 +99,9 @@ def gettinginputs():
     try:
         print(
             "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
-        regressionType = "1"#RegressionTypeEnum(input("Selection:"))
+        regressionType = RegressionTypeEnum(input("Selection:"))
         print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
-        poolsize =PoolSize.POOL_1000# PoolSize(input("Selection:"))
+        poolsize =PoolSize(input("Selection:"))
     except ValueError:
         print("The selection is not valid!")
         exit()
@@ -128,7 +128,7 @@ def controlfolderfileprocess(regressionType):
     return FOLDER_PATH
 
 
-def regressiontest():
+def startregressiontest():
     currentDT = datetime.datetime.now()
     print("Starting Time:" + str(currentDT))
     print("Be sure to put your new telematics folder in /home/ec2-user/regressiontest/build !!")
@@ -150,7 +150,8 @@ def regressiontest():
     time.sleep(10)
 
     version = requests.get("http://localhost:8081/version").content.decode("utf-8")
-    print("Base Telematics version:",checkfolder(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value).split("trip_results")[1].split(".csv")[0])
+    if regressionType == RegressionTypeEnum.RegressionTest:
+        print("Base Telematics version:",checkfolder(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value).split("trip_results")[1].split(".csv")[0])
     print("Current Telematics version:" + version)
 
     if regressionType == RegressionTypeEnum.RegressionMapBase:
@@ -168,13 +169,14 @@ def regressiontest():
     else:
         VersionFile(FOLDER_PATH + "tripresults/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv")
-    comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version)
-    print("Report is ready! Check reports folder!")
-    print(comparisionpath)
+        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version)
+        print("Report is ready! Check reports folder!")
+        print(comparisionpath)
+
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
     finishdt = datetime.datetime.now()
     print("Start at " + str(currentDT))
     print("Finish at " + str(finishdt))
 
 
-regressiontest()
+#startregressiontest()

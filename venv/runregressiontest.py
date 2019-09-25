@@ -1,4 +1,4 @@
-from src import regressiontest
+from src.regressiontest import startregressiontest
 
 if __name__ == "__main__":
-    regressiontest()
+    startregressiontest()
