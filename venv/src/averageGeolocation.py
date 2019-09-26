@@ -68,6 +68,7 @@ def distance(lon1, lat1, lon2, lat2):
     distance = R * c
     return distance * 1000
 
+
 def calculatedistancestopped(speedzerodf):
     rawloca = []
     snaploca = []
@@ -75,9 +76,14 @@ def calculatedistancestopped(speedzerodf):
         rawloca.append((row['rawlat'], row['rawlon']))
         snaploca.append((row['snaplat'], row['snaplon']))
     mergerawlat, mergerawlon = averageGeolocation(rawloca)
+    print("rawloca")
+    print(rawloca)
+    #print("snaploca")
+    #print(snaploca)
     mergesnaplat, mergesnaplon = averageGeolocation(snaploca)
-    print(round(distance(mergerawlat, mergerawlon, mergesnaplat, mergerawlon),2))
-    print("start="+str(rawloca[0][0])+"--"+"end="+str(rawloca[len(rawloca)-1][0]))
+    print(round(distance(mergerawlat, mergerawlon, mergesnaplat, mergerawlon), 2))
+    print("start=" + str(rawloca[0][0]) + "--" + "end=" + str(rawloca[len(rawloca) - 1][0]))
+
 
 # print(great_circle(-121.96847, 37.35153, 	-121.9683762,37.351532))
 # print(distance(-121.96847, 37.35153, 	-121.9683762,37.351532))
@@ -92,18 +98,17 @@ speedzerodf = pd.DataFrame(columns=['rawlat', 'rawlon', 'snaplat', 'snaplon', 's
 start = False
 
 for index, row in datasetrawsnapped.iterrows():
-    if row["speed"] == 0:
+    if row["speed"] < 1:
         start = True
         speedzerodf = speedzerodf.append(row)
-    if start and row["speed"] > 0:
+    if start and row["speed"] > 1:
         calculatedistancestopped(speedzerodf)
-        start= False
+        start = False
         speedzerodf = pd.DataFrame(columns=['rawlat', 'rawlon', 'snaplat', 'snaplon', 'speed'])
 
     distan = round(distance(float(row['rawlon']), float(row['rawlat']), float(row['snaplon']), float(row['snaplat'])),
                    2)
     datasetrawsnapped["distance"][index] = distan
     distlist.append(distan)
-#print(speedzerodf)
+# print(speedzerodf)
 datasetrawsnapped.to_csv(PATH + "snappedrawLocationmerged_distance.csv")
-
