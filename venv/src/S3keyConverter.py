@@ -153,4 +153,15 @@ group by driver_id, DATE(local_date) having count(*) >=5) data
 group by driver_id having count(*)>=15 order by RANDOM()  limit 600
 
 
+select * from telematics.trip_file where (trip_id,driver_id) in (select concat(driver_id,'-',session_id) as trip_id,driver_id
+from amzl_geotab.user_device_pairs p
+         inner join telematics.driving_sessions s using (session_id)
+where p.type = 1 and s.driver_id in (select data.user_id from (
+select user_id, count(*) as  tripcount
+from amzl_geotab.user_device_pairs p
+         inner join telematics.driving_sessions s using (session_id)
+where p.type = 1 group by user_id having count(*) >=10 
+order by rand() desc limit 1500) data)
+order by p.id desc);
+
 '''
