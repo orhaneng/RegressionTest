@@ -92,22 +92,35 @@ def connect2Redshift():
     dataframe = pd.read_csv(
         "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/dataconversion/amazon.csv")
 
-    #dataframe = dataframe.groupby(['driver_id', 'trip_id']).size().reset_index(name='Freq')[["driver_id", "trip_id"]]
-    print(dataframe)
+    dataframe = dataframe.groupby(['driver_id', 'trip_id']).size().reset_index(name='Freq')[["driver_id", "trip_id"]]
+    print(dataframe.shape)
     count = 0
     list = []
     result = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key', 'timestamp'])
+    countsuccess = 0
+
     for index, row in dataframe.iterrows():
-        query = "select trip_id,driver_id, timestamp from trips where trip_id='" + str(row[1]) + "' and driver_id='" + str(row[0]) + "';"
+        if count % 100 == 0:
+            con.close()
+            con = psycopg2.connect(dbname='productionreportingdb',
+                                   host='edriving-telematics-production-reporting-db.c4bepljyphir.us-west-2.redshift.amazonaws.com',
+                                   port='5439', user='telematics_readonly', password='telematicsReadOnly123')
+            cur = con.cursor()
+
+        query = "select timestamp from trips where trip_id='" + str(row[1]) + "' and driver_id='" + str(row[0]) + "';"
         cur.execute(query)
         timestamp = ""
         if cur.rowcount > 0:
             timestamp = str(int(cur.fetchall()[0][0].timestamp() * 1000))
+            countsuccess = countsuccess + 1
         list.append(timestamp)
-        new_row = {'driver_id': row[0], 'trip_id': row[1], 's3_key':row[2], 'timestamp':str(timestamp)}
+        #new_row = {'driver_id': row[0], 'trip_id': row[1], 's3_key': row[2], 'timestamp': str(timestamp)}
+        new_row = {'driver_id': row[0], 'trip_id': row[1], 's3_key': "", 'timestamp': str(timestamp)}
         result = result.append(new_row, ignore_index=True)
         count = count + 1
         print(count)
+    print("countsuccess" ,countsuccess)
+
     print(result.shape)
     con.close()
     result.to_csv(
