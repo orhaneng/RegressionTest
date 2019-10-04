@@ -10,8 +10,8 @@ from multiprocessing import Pool
 import tqdm
 import time
 
-server_url = 'http://localhost:8080/api/v2/drivers'
-
+#server_url = 'http://localhost:8080/api/v2/drivers'
+server_url = 'http://localhost:8080/api/v3/drivers/'
 
 def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionType):
     log = []
@@ -62,8 +62,10 @@ def multi_run_wrapper(args):
 
 def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressiontype):
     file_dir = batch_file_dir + driver_id + '/' + file_name
-    upload_url = server_url + '/' + driver_id + '/trips'
-    response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
+    timestamp =  '{"time": 1569130471379}' #{'timestamp': '1569130471379'}
+    upload_url = server_url +  "517741999" + '/trips/' + "9435e1d8c1ac453e99f9fd27ed7f3f28"
+    headers = {'Content-Type':'application/json'}
+    response = requests.post(upload_url, data=timestamp, headers=headers)
     response_json = json.loads(response.content)
 
     # print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
