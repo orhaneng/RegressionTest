@@ -24,7 +24,7 @@ if not sys.warnoptions:
 os.system("source activate base")
 
 
-class RegressionTypeEnum(Enum):
+class RegressionProcessTypeEnum(Enum):
     RegressionTest = "1"
     RegressionUpdateMainTripresults = "2"
     RegressionMapBase = "3"
@@ -99,7 +99,7 @@ def gettinginputs():
     try:
         print(
             "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
-        regressionType = RegressionTypeEnum(input("Selection:"))
+        regressionType = RegressionProcessTypeEnum(input("Selection:"))
         print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
         poolsize =PoolSize(input("Selection:"))
     except ValueError:
@@ -119,7 +119,7 @@ def controlfolderfileprocess(regressionType):
         exit()
 
     print("Copying config files!")
-    if regressionType == RegressionTypeEnum.RegressionMapBase:
+    if regressionType == RegressionProcessTypeEnum.RegressionMapBase:
         os.system(
             "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
     else:
@@ -150,11 +150,11 @@ def startregressiontest():
     time.sleep(10)
 
     version = requests.get("http://localhost:8081/version").content.decode("utf-8")
-    if regressionType == RegressionTypeEnum.RegressionTest:
+    if regressionType == RegressionProcessTypeEnum.RegressionTest:
         print("Base Telematics version:",checkfolder(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value).split("trip_results")[1].split(".csv")[0])
     print("Current Telematics version:" + version)
 
-    if regressionType == RegressionTypeEnum.RegressionMapBase:
+    if regressionType == RegressionProcessTypeEnum.RegressionMapBase:
         log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 1, regressionType)
     else:
         log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6, regressionType)
@@ -162,7 +162,7 @@ def startregressiontest():
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 
-    if regressionType == RegressionTypeEnum.RegressionUpdateMainTripresults or regressionType == RegressionTypeEnum.RegressionMapBase:
+    if regressionType == RegressionProcessTypeEnum.RegressionUpdateMainTripresults or regressionType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.to_csv(
             FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + ".csv")

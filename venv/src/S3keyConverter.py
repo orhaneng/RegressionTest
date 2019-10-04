@@ -56,7 +56,7 @@ def processCSVtoGetS3key():
 
 # processCSVtoGetS3key()
 def divideDriversIntoPools():
-    #PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+    # PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
     PATH = "/home/ec2-user/regressiontest/"
     exampleList = pd.read_csv(PATH + "dataconversion/final.csv", index_col=False)
     groupedList = exampleList.groupby("driver_id").count().reset_index().sort_values('trip_id', ascending=True)
@@ -64,10 +64,10 @@ def divideDriversIntoPools():
     groupedList = groupedList[["driver_id", 'count']]
     data1000K = pd.DataFrame(columns=['driver_id', 'count'])
     count = 0
-    countdriver=0
+    countdriver = 0
     for index, row in groupedList.iterrows():
         count = count + row.loc['count']
-        countdriver = countdriver+1
+        countdriver = countdriver + 1
         new_row = {'driver_id': row.loc['driver_id'], 'count': row.loc['count']}
         data1000K = data1000K.append(new_row, ignore_index=True)
         shutil.copytree(PATH + "tripfiles/100000/" + str(row.loc['driver_id']),
@@ -79,9 +79,78 @@ def divideDriversIntoPools():
     print(data1000K.shape)
 
 
-divideDriversIntoPools()
+def connect2Redshift():
+    import psycopg2
+    from datetime import datetime
+    con = psycopg2.connect(dbname='productionreportingdb',
+                           host='edriving-telematics-production-reporting-db.c4bepljyphir.us-west-2.redshift.amazonaws.com',
+                           port='5439', user='telematics_readonly', password='telematicsReadOnly123')
+    cur = con.cursor()
+    cur.execute(
+        "select timestamp from trips where trip_id='300760431-6e12a02306ba410cb8bb9393775deedc' and driver_id='300760431';")
 
+    dataframe = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/dataconversion/amazon.csv")
+
+    #dataframe = dataframe.groupby(['driver_id', 'trip_id']).size().reset_index(name='Freq')[["driver_id", "trip_id"]]
+    print(dataframe)
+    count = 0
+    list = []
+    result = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key', 'timestamp'])
+    for index, row in dataframe.iterrows():
+        query = "select trip_id,driver_id, timestamp from trips where trip_id='" + str(row[1]) + "' and driver_id='" + str(row[0]) + "';"
+        cur.execute(query)
+        timestamp = ""
+        if cur.rowcount > 0:
+            timestamp = str(int(cur.fetchall()[0][0].timestamp() * 1000))
+        list.append(timestamp)
+        new_row = {'driver_id': row[0], 'trip_id': row[1], 's3_key':row[2], 'timestamp':str(timestamp)}
+        result = result.append(new_row, ignore_index=True)
+        count = count + 1
+        print(count)
+    print(result.shape)
+    con.close()
+    result.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/dataconversion/amazon2.csv")
+
+    # print(datetime.timestamp(cur.fetchall()[0][11]))
+    # print((cur.fetchall()[0][11].timestamp() * 1000))
+    # timestamp = cur.fetchall()[0][11]
+    # val_int = int((timestamp.timestamp() * 1000))
+    # print(val_int)
+
+    # val_fract = timestamp - val_int
+    # 1568992956.16
+    # print(cur.fetchall()[0][11].strftime("%s"))
+    # 1569021756
+    con.close()
+
+
+connect2Redshift()
+
+
+def connect2Aurora():
+    import mysql.connector
+
+    cnx = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
+                                  host='production-aurora-mentor.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
+                                  database='telematics')
+    cursor = cnx.cursor()
+    cursor.execute(
+        "select * from telematics.trip_file where trip_id = '300740880-12d265acb8a24b6a9e303005ea01327d' and driver_id='300740880'")
+    myresult = cursor.fetchall()
+    for x in myresult:
+        print(x)
+    cnx.close()
+
+
+# connect2Aurora()
 '''
+
+300423983	300423983-4d77a24858f64b2cac872960742cb1e2	trip.300423983.1568992956162.bin_v2.gz	365	1568992956160	1568994090538	300423983/4d77a24858f64b2cac872960742cb1e2_trip.300423983.1568992956162.bin_v2.gz	2019-09-20 08:41:36.0	
+300423983-4d77a24858f64b2cac872960742cb1e2	300423983	9869.0	1079.0	true	false	2019-09-20	22.04	CAR	SUCCESS	GMT-04:00	2019-09-20 08:22:36.16	2019-09-20 08:41:38.143			false	Bayberry Dr, Cape May Court House, NJ	MANUAL_END	MENTOR_NON_GEOTAB
+
+
 select count(*) from trips
 where local_date >= '2019-08-01' and 
 local_date < '2019-09-01'
