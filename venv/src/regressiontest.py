@@ -4,6 +4,7 @@ from src.get_trip_from_regression import getTripsFromRegressionServer
 from src.comparision import compareTrips
 from src.comparision import checkfolder
 from enum import Enum
+from src.Enums import *
 from src.versioningfiles import VersionFile
 import socket
 import os
@@ -23,7 +24,7 @@ if not sys.warnoptions:
     warnings.simplefilter("ignore")
 os.system("source activate base")
 
-
+'''
 class RegressionTypeEnum(Enum):
     MentorBusiness = "1"
     NonArmada = "2"
@@ -42,7 +43,7 @@ class PoolSize(Enum):
     POOL_50000 = "50000"
     POOL_100000 = "100000"
     POOL_NANARMADA="non-armada"
-
+'''
 
 print("=======REGRESSION TEST==========")
 
