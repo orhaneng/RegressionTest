@@ -24,6 +24,11 @@ if not sys.warnoptions:
 os.system("source activate base")
 
 
+class RegressionTypeEnum(Enum):
+    MentorBusiness = "1"
+    NonArmada = "2"
+
+
 class RegressionProcessTypeEnum(Enum):
     RegressionTest = "1"
     RegressionUpdateMainTripresults = "2"
@@ -36,6 +41,7 @@ class PoolSize(Enum):
     POOL_20000 = "20000"
     POOL_50000 = "50000"
     POOL_100000 = "100000"
+    POOL_NANARMADA="non-armada"
 
 
 print("=======REGRESSION TEST==========")
@@ -98,17 +104,25 @@ def checkDynamoDBProcess():
 def gettinginputs():
     try:
         print(
+            "Select your type.. (1-Mentor Business 2-Non-Armada)")
+        regressionType = RegressionTypeEnum(input("Selection:"))
+        print(
             "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
-        regressionType = RegressionProcessTypeEnum(input("Selection:"))
-        print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
-        poolsize =PoolSize(input("Selection:"))
+        regressionProcessType = RegressionProcessTypeEnum(input("Selection:"))
+
+        if regressionType == RegressionTypeEnum.MentorBusiness:
+            print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
+            poolsize = PoolSize(input("Selection:"))
+        else:
+            poolsize = PoolSize.POOL_NANARMADA
+
     except ValueError:
         print("The selection is not valid!")
         exit()
-    return regressionType, poolsize
+    return regressionProcessType, poolsize, regressionType
 
 
-def controlfolderfileprocess(regressionType):
+def controlfolderfileprocess(regressionProcessType, regressionType):
     if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
         FOLDER_PATH = "/home/ec2-user/regressiontest/"
     else:
@@ -119,12 +133,21 @@ def controlfolderfileprocess(regressionType):
         exit()
 
     print("Copying config files!")
-    if regressionType == RegressionProcessTypeEnum.RegressionMapBase:
-        os.system(
-            "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
-    else:
-        os.system(
-            "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/config " + FOLDER_PATH + "build/telematics-server/")
+    if regressionType == RegressionTypeEnum.MentorBusiness:
+        if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
+            os.system(
+                "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/mentorbusiness/config " + FOLDER_PATH + "build/telematics-server/")
+        else:
+            os.system(
+                "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/mentorbusiness/config " + FOLDER_PATH + "build/telematics-server/")
+    elif regressionType == RegressionTypeEnum.NonArmada:
+        if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
+            os.system(
+                "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/non-armada/config " + FOLDER_PATH + "build/telematics-server/")
+        else:
+            os.system(
+                "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/non-armada/config " + FOLDER_PATH + "build/telematics-server/")
+
     return FOLDER_PATH
 
 
@@ -133,14 +156,13 @@ def startregressiontest():
     print("Starting Time:" + str(currentDT))
     print("Be sure to put your new telematics folder in /home/ec2-user/regressiontest/build !!")
 
-    regressionType, poolsize = gettinginputs()
+    regressionProcessType, poolsize, regressionType = gettinginputs()
 
     checkDynamoDBProcess()
 
     print("Checking telematics folder in build folder...")
 
-
-    FOLDER_PATH = controlfolderfileprocess(regressionType)
+    FOLDER_PATH = controlfolderfileprocess(regressionProcessType, regressionType)
 
     print("Killing old telematics processes if exits...")
     killoldtelematicsprocess()
@@ -150,19 +172,23 @@ def startregressiontest():
     time.sleep(10)
 
     version = requests.get("http://localhost:8081/version").content.decode("utf-8")
-    if regressionType == RegressionProcessTypeEnum.RegressionTest:
-        print("Base Telematics version:",checkfolder(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value).split("trip_results")[1].split(".csv")[0])
+    if regressionProcessType == RegressionProcessTypeEnum.RegressionTest:
+        print("Base Telematics version:",
+              checkfolder(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value).split("trip_results")[1].split(
+                  ".csv")[0])
     print("Current Telematics version:" + version)
 
-    if regressionType == RegressionProcessTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 1, regressionType)
+    if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
+                                                  regressionProcessType, regressionType)
     else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6, regressionType)
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
+                                                  regressionProcessType, regressionType)
     trip_results = getTripsFromRegressionServer()
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 
-    if regressionType == RegressionProcessTypeEnum.RegressionUpdateMainTripresults or regressionType == RegressionProcessTypeEnum.RegressionMapBase:
+    if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateMainTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.to_csv(
             FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + ".csv")
@@ -178,5 +204,4 @@ def startregressiontest():
     print("Start at " + str(currentDT))
     print("Finish at " + str(finishdt))
 
-
-#startregressiontest()
+# startregressiontest()

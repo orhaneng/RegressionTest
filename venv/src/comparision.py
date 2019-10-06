@@ -65,12 +65,18 @@ def checkfolder(path):
 
 
 def driverScoreComparision(writer, df1, df2):
-    old_score = df1.groupby("driver_id", as_index=False)["score"].mean()
-    new_score = df2.groupby("driver_id", as_index=False)["score"].mean()
+    df1score = df1.copy(deep=True)
+    df1score.loc[df1score['score'] == 'None', 'score'] = 0
+    df1score['score'] = df1score['score'].astype(int)
+    old_score = df1score.groupby("driver_id", as_index=False)["score"].mean()
+    df2score = df2.copy(deep=True)
+    df2score.loc[df2score['score'] == 'None', 'score'] = 0
+    df2score['score'] = df2score['score'].astype(int)
+    new_score = df2score.groupby("driver_id", as_index=False)["score"].mean()
     df_all = pd.concat([old_score.set_index('driver_id'), new_score.set_index('driver_id')],
                        axis='columns', keys=['Old', 'New'])
     df_final = df_all.swaplevel(axis='columns')[old_score.columns[1:]]
     df_final = df_final.style.apply(highlight_diff, axis=None)
     df_final.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
 
-# compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "1000", '3.2.1')
+#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "non-armada", '3.2.5')

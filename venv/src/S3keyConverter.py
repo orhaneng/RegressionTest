@@ -114,12 +114,12 @@ def connect2Redshift():
             timestamp = str(int(cur.fetchall()[0][0].timestamp() * 1000))
             countsuccess = countsuccess + 1
         list.append(timestamp)
-        #new_row = {'driver_id': row[0], 'trip_id': row[1], 's3_key': row[2], 'timestamp': str(timestamp)}
+        # new_row = {'driver_id': row[0], 'trip_id': row[1], 's3_key': row[2], 'timestamp': str(timestamp)}
         new_row = {'driver_id': row[0], 'trip_id': row[1], 's3_key': "", 'timestamp': str(timestamp)}
         result = result.append(new_row, ignore_index=True)
         count = count + 1
         print(count)
-    print("countsuccess" ,countsuccess)
+    print("countsuccess", countsuccess)
 
     print(result.shape)
     con.close()
@@ -139,25 +139,84 @@ def connect2Redshift():
     con.close()
 
 
-connect2Redshift()
+# connect2Redshift()
 
 
 def connect2Aurora():
     import mysql.connector
 
-    cnx = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
+    con = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
                                   host='production-aurora-mentor.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
                                   database='telematics')
-    cursor = cnx.cursor()
-    cursor.execute(
-        "select * from telematics.trip_file where trip_id = '300740880-12d265acb8a24b6a9e303005ea01327d' and driver_id='300740880'")
-    myresult = cursor.fetchall()
-    for x in myresult:
-        print(x)
-    cnx.close()
+    cur = con.cursor(buffered=True)
+    dataframe = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/dataconversion/amazon.csv")
+
+    dataframe = dataframe.groupby(['driver_id', 'trip_id']).size().reset_index(name='Freq')[["driver_id", "trip_id"]]
+    print(dataframe.shape)
+    count = 0
+    list = []
+    result = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key', 'timestamp'])
+    countsuccess = 0
+
+    for index, row in dataframe.iterrows():
+        if count % 100 == 0:
+            con.close()
+            con = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
+                                          host='production-aurora-mentor.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
+                                          database='telematics')
+            cur = con.cursor(buffered=True)
+
+        query = "select end_time from telematics.driving_sessions where driver_id='" + str(row[0]) + "' and session_id = '" + \
+               str(row[1].split('-')[1]) + "'"
+        cur.execute(query)
+        res = cur.fetchall()
+        timestamp = ''
+        if len(res) > 0:
+            timestamp = res[0][0]
+        new_row = {'driver_id': row[0], 'trip_id': row[1], 's3_key': "", 'timestamp': str(timestamp)}
+        result = result.append(new_row, ignore_index=True)
+        count = count + 1
+        countsuccess = countsuccess + 1
+        print(count)
+    print("countsuccess", countsuccess)
+
+    print(result.shape)
+    con.close()
+    result.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/dataconversion/amazon3.csv")
 
 
-# connect2Aurora()
+#connect2Aurora()
+
+
+def getsessionidindriver():
+    import os
+    batch_file_dir = '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripfiles/non-armada/'
+    log = []
+    file_names = []
+    driver_id_set = None
+    # Get file names and directories
+    driverCount = 0
+    for root, dirs, files in os.walk(batch_file_dir):
+        if driver_id_set == None:
+            driver_id_set = dirs
+            continue
+        files.sort()
+        driverCount = driverCount + 1
+        file_names.append(files)
+    input = []
+    driverlist = []
+    for idx in range(len(driver_id_set)):
+        driverlist.append(driver_id_set[idx])
+        sessionidlist = []
+        if len(file_names[idx]) > 0:
+            for jdx in range(len(file_names[idx])):
+                sessionidlist.append(file_names[idx][jdx].split('_')[0])
+        setsessionlist = list(set(sessionidlist))
+        print(setsessionlist)
+
+getsessionidindriver()
 '''
 
 300423983	300423983-4d77a24858f64b2cac872960742cb1e2	trip.300423983.1568992956162.bin_v2.gz	365	1568992956160	1568994090538	300423983/4d77a24858f64b2cac872960742cb1e2_trip.300423983.1568992956162.bin_v2.gz	2019-09-20 08:41:36.0	

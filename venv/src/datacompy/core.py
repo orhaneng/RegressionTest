@@ -464,7 +464,7 @@ class Compare(object):
         )
 
         report += df_header[["DataFrame", "Columns", "Rows"]].to_string()
-        df_header.to_excel(writer, sheet_name='Summary', startcol=6 , startrow=6)
+        df_header.to_excel(writer, sheet_name='Summary', startcol=6, startrow=6)
         df_graph = pd.DataFrame(
             {"Graphs": ""}, index=[0])
         df_graph.to_excel(writer, sheet_name='Graphs', startrow=0, startcol=1)
@@ -685,7 +685,7 @@ class Compare(object):
 
     def createUnequalValuesChart(self, df_match_stats, writer):
         y_pos = np.arange(df_match_stats.shape[0])
-        plt.barh(y_pos, df_match_stats['# Unequal'],height=0.3, edgecolor='black')
+        plt.barh(y_pos, df_match_stats['# Unequal'], height=0.3, edgecolor='black')
         plt.yticks(y_pos, df_match_stats["Column"])
         plt.subplots_adjust(left=0.36, right=0.9, top=0.9, bottom=0.1)
         plt.title("Columns with Unequal Values or Types")
@@ -728,8 +728,14 @@ class Compare(object):
 
     def createDriverScoreDensityChart(self, writer):
 
-        old_score = self.df1.groupby("driver_id", as_index=False)["score"].mean()
-        new_score = self.df2.groupby("driver_id", as_index=False)["score"].mean()
+        df1score = self.df1.copy(deep=True)
+        df1score.loc[df1score['score'] == 'None', 'score'] = 0
+        df1score['score'] = df1score['score'].astype(int)
+        old_score = df1score.groupby("driver_id", as_index=False)["score"].mean()
+        df2score = self.df2.copy(deep=True)
+        df2score.loc[df2score['score'] == 'None', 'score'] = 0
+        df2score['score'] = df2score['score'].astype(int)
+        new_score = df2score.groupby("driver_id", as_index=False)["score"].mean()
         old_score.columns = ["driver_id", "old_score"]
         new_score.columns = ["driver_id", "new_score"]
         plt.subplot(2, 1, 1)
