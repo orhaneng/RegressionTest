@@ -180,23 +180,29 @@ def startregressiontest():
     print("Current Telematics version:" + version)
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 4,
                                                   regressionProcessType, regressionType)
     else:
         log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
                                                   regressionProcessType, regressionType)
     trip_results = getTripsFromRegressionServer()
 
+    #log_dataframe.to_csv(
+    #        FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + "log_dataframe.csv")
+    #trip_results.to_csv(
+    #        FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + "trip_results.csv")
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateMainTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")
+        combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
         combinedresult_s3key.to_csv(
-            FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + ".csv")
+            FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + ".csv", index=False)
     else:
         VersionFile(FOLDER_PATH + "tripresults/" + poolsize.value + "/", ".csv")
-        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv")
-        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version)
+        combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
+        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv", index=False)
+        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType)
         print("Report is ready! Check reports folder!")
         print(comparisionpath)
 

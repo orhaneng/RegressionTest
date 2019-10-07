@@ -6,9 +6,11 @@ from src.versioningfiles import VersionFile
 import os
 import numpy as np
 import datetime
+from src.Enums import *
 
 
-def compareTrips(path, poolsize, version):
+
+def compareTrips(path, poolsize, version, regressionType):
     VersionFile(path + "reports/" + poolsize + "/", ".xlsx")
 
     filepath = path + "reports/" + poolsize + "/regression_report" + version + ".xlsx"
@@ -16,11 +18,12 @@ def compareTrips(path, poolsize, version):
                             engine='xlsxwriter')
     df1 = pd.read_csv(path + "tripresults/maintripresult/" + poolsize + "/" + checkfolder(
         path + "tripresults/maintripresult/" + poolsize), index_col=False)
-    df1.drop(df1.columns[1], axis=1, inplace=True)
     df2 = pd.read_csv(
         path + "tripresults/" + poolsize + "/" + checkfolder(path + "tripresults/" + poolsize),
         index_col=False)
-    df2.drop(df2.columns[1], axis=1, inplace=True)
+    if regressionType == RegressionTypeEnum.MentorBusiness:
+        df1.drop(df1.columns[0], axis=1, inplace=True)
+        df2.drop(df2.columns[0], axis=1, inplace=True)
     compare = Compare(
         df1,
         df2,
@@ -59,7 +62,7 @@ def checkfolder(path):
             count = count + 1
             fname = filename
     if count > 1:
-        print("ERROR! be allowed only one csv file under " + path)
+        print("ERROR! Allowed only one csv file under " + path)
         exit()
     return fname
 
