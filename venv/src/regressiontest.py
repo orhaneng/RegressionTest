@@ -24,27 +24,6 @@ if not sys.warnoptions:
     warnings.simplefilter("ignore")
 os.system("source activate base")
 
-'''
-class RegressionTypeEnum(Enum):
-    MentorBusiness = "1"
-    NonArmada = "2"
-
-
-class RegressionProcessTypeEnum(Enum):
-    RegressionTest = "1"
-    RegressionUpdateMainTripresults = "2"
-    RegressionMapBase = "3"
-
-
-class PoolSize(Enum):
-    POOL_1000 = "1000"
-    POOL_10000 = "10000"
-    POOL_20000 = "20000"
-    POOL_50000 = "50000"
-    POOL_100000 = "100000"
-    POOL_NANARMADA="non-armada"
-'''
-
 print("=======REGRESSION TEST==========")
 
 
@@ -180,17 +159,13 @@ def startregressiontest():
     print("Current Telematics version:" + version)
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 4,
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 1,
                                                   regressionProcessType, regressionType)
     else:
         log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
                                                   regressionProcessType, regressionType)
     trip_results = getTripsFromRegressionServer()
 
-    #log_dataframe.to_csv(
-    #        FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + "log_dataframe.csv")
-    #trip_results.to_csv(
-    #        FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + "trip_results.csv")
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateMainTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
