@@ -65,8 +65,12 @@ def checkDynamoDBProcess():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print("Checking DynamoDB connection")
     if sock.connect_ex(('localhost', 8000)) != 0:
-        print("can not be continued without DynamoDB!")
-        exit()
+        if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
+            # os.system("sh /home/ec2-user/regressiontest/dynamodb/local1/start-dynamo1.sh")
+            # time.sleep(5)
+            if sock.connect_ex(('localhost', 8000)) != 0:
+                print("can not be continued without DynamoDB!")
+                exit()
     print("Cleaning DynamoDB...")
 
     dynamodbtry = 0
@@ -164,10 +168,11 @@ def startregressiontest():
     else:
         log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
                                                   regressionProcessType, regressionType)
-    trip_results = getTripsFromRegressionServer()
+    log_dataframe.to_csv(FOLDER_PATH + "stagingtest.csv");
+    # trip_results = getTripsFromRegressionServer()
 
-    combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
-
+    # combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
+    '''
     if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateMainTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
@@ -180,7 +185,7 @@ def startregressiontest():
         comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType)
         print("Report is ready! Check reports folder!")
         print(comparisionpath)
-
+    '''
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")
     finishdt = datetime.datetime.now()
     print("Start at " + str(currentDT))
