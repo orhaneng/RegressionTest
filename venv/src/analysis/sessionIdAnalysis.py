@@ -44,47 +44,71 @@ def connectAurora():
 
     cur = con.cursor(buffered=True)
     result = pd.DataFrame(
-        columns=['driver_id', 'trip_id','local_date', 'source', 'score', 'distraction_count', 'session_id', 'device', 'platform',
+        columns=['driver_id', 'trip_id', 'local_date', 'source', 'score', 'distraction_count', 'session_id', 'device',
+                 'platform',
                  'appVersion'])
 
     for index, row in dataframe.iterrows():
         flag = False
-        session_id=''
+        session_id = ''
         if row['source'] == 'MENTOR_GEOTAB':
             thedayafter = datetime.strptime(row["local_date"], '%Y-%m-%d').date() + timedelta(days=1)
             query = "select session_id from amzl_geotab.user_device_pairs where (user_id = '" + str(
                 row["driver_id"]) + "' and active_from between '" + row["local_date"] + "' and '" + str(
                 thedayafter) + "' ) "
             cur.execute(query)
+            new_row = None
+            newrowcount = 0
             for session in iter(cur.fetchall()):
                 session_id = session
                 elastic = requests.get(
                     "https://search-edriving-elk-2-x7jeuzd5bckjxkgtyohttwt66y.us-west-2.es.amazonaws.com/telematics-production-api-*/_search?q=method:POST%20AND%20path:" + str(
                         session[0]) + "&size=10&_source_includes=platform,device,app,appVersion").content.decode(
                     "utf-8")
+                response_json = json.loads(elastic)
+                if response_json.get("hits") == None or response_json.get("hits") == "" or response_json.get(
+                        "hits").get(
+                    "hits") == None or response_json.get("hits").get("hits") == "":
+                    continue
+                for item in response_json.get("hits").get("hits"):
+                    if item.get("_source") == None or item.get("_source") == "":
+                        continue
+                    if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
+                        elasticrow = item.get("_source")
+                        flag = True
+                        new_row = {'driver_id': row["driver_id"], 'trip_id': row["trip_id"], 'local_date': row[1],
+                                   'source': row[2],
+                                   'session_id': str(session_id),
+                                   'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
+                                   'platform': elasticrow.get('platform'), 'score': row['score'],
+                                   'distraction_count': row['manipu_count']}
+                        break
+            if new_row != None:
+                result = result.append(new_row, ignore_index=True)
         elif row['source'] == 'MENTOR_NON_GEOTAB':
             session_id = str(row['trip_id']).split('-')[1]
             elastic = requests.get(
                 "https://search-edriving-elk-2-x7jeuzd5bckjxkgtyohttwt66y.us-west-2.es.amazonaws.com/telematics-production-api-*/_search?q=method:POST%20AND%20path:" + str(
                     session_id) + "&size=10&_source_includes=platform,device,app,appVersion").content.decode(
                 "utf-8")
-        response_json = json.loads(elastic)
-        if response_json.get("hits") == None or response_json.get("hits") == "" or response_json.get("hits").get(
-                "hits") == None or response_json.get("hits").get("hits") == "":
-            continue
-        for item in response_json.get("hits").get("hits"):
-            if item.get("_source") == None or item.get("_source") == "":
+            response_json = json.loads(elastic)
+            if response_json.get("hits") == None or response_json.get("hits") == "" or response_json.get("hits").get(
+                    "hits") == None or response_json.get("hits").get("hits") == "":
                 continue
-            if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
-                elasticrow = item.get("_source")
-                flag = True
-                new_row = {'driver_id': row["driver_id"],'trip_id': row["trip_id"], 'local_date': row[1], 'source': row[2],
-                           'session_id': str(session_id),
-                           'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
-                           'platform': elasticrow.get('platform'), 'score': row['score'],
-                           'distraction_count': row['manipu_count']}
-                result = result.append(new_row, ignore_index=True)
-                break
+            for item in response_json.get("hits").get("hits"):
+                if item.get("_source") == None or item.get("_source") == "":
+                    continue
+                if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
+                    elasticrow = item.get("_source")
+                    flag = True
+                    new_row = {'driver_id': row["driver_id"], 'trip_id': row["trip_id"], 'local_date': row[1],
+                               'source': row[2],
+                               'session_id': str(session_id),
+                               'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
+                               'platform': elasticrow.get('platform'), 'score': row['score'],
+                               'distraction_count': row['manipu_count']}
+                    result = result.append(new_row, ignore_index=True)
+                    break
 
         if index % 100 == 0:
             print(index)
