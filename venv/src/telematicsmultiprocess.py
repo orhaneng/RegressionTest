@@ -12,6 +12,7 @@ import time
 from enum import Enum
 from src.Enums import *
 
+
 def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType, regressiontype):
     log = []
     file_names = []
@@ -35,9 +36,9 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
                 if file_names[idx][jdx].endswith('.bin_v2.gz'):
                     if regressiontype == RegressionTypeEnum.MentorBusiness:
 
-                            input.append(
-                                tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx,
-                                       regressionProcessType, regressiontype)))
+                        input.append(
+                            tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx,
+                                   regressionProcessType, regressiontype)))
                     elif regressiontype == RegressionTypeEnum.NonArmada:
                         sessionidlist.append(file_names[idx][jdx].split('_')[0])
             if regressiontype == RegressionTypeEnum.NonArmada:
@@ -72,7 +73,6 @@ def multi_run_wrapper(args):
 
 
 def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProcessType, regressiontype):
-
     if regressiontype == RegressionTypeEnum.MentorBusiness:
         server_url = 'http://localhost:8080/api/v2/drivers'
         file_dir = batch_file_dir + driver_id + '/' + file_name
@@ -87,17 +87,13 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
         response = requests.post(upload_url, data=timestamp, headers=headers)
         response_json = json.loads(response.content)
 
-    # print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
-    #    response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
-    if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get(
-            'reasonDetail'):
+    if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
         print("unsaved mapping data " + response_json.get('reasonDetail'))
         raise Exception("unsaved mapping data")
-    #if response.status_code != 200 and (regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase or regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateMainTripresults):
-    #    print(
-    #        "response is not 200" + "driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
-    #            response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
-        #raise Exception(response.reason)
+
+    if response.status_code != 200 and response.status_code != 400:
+        print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
+            response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
 
     log_row = []
     log_row.append(str(response_json.get('tripId')))

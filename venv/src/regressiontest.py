@@ -17,8 +17,8 @@ import shutil
 import errno
 import pandas as pd
 import datetime
-import warnings
 import requests
+import warnings
 
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
@@ -159,10 +159,10 @@ def startregressiontest():
     print("Current Telematics version:" + version)
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 1,
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
                                                   regressionProcessType, regressionType)
     else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 10,
                                                   regressionProcessType, regressionType)
     trip_results = getTripsFromRegressionServer()
 
