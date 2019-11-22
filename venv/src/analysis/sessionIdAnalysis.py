@@ -6,7 +6,79 @@ from datetime import *
 import requests
 import json
 from multiprocessing import Pool
+import tqdm
 
+
+def multi_run_wrapper(args):
+    return multipool(*args)
+
+def multipool(driver_id,local_date,source,trip_id,score,
+                   distance,manipu_count):
+    flag = False
+    new_row = None
+    if source == 'MENTOR_GEOTAB':
+        con = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
+                                      host='production-aurora-mentor.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
+                                      database='amzl_geotab')
+
+        cur = con.cursor(buffered=True)
+        thedayafter = datetime.strptime(local_date, '%Y-%m-%d').date() + timedelta(days=1)
+        query = "select session_id from amzl_geotab.user_device_pairs where (user_id = '" + str(
+            driver_id) + "' and active_from between '" + local_date + "' and '" + str(
+            thedayafter) + "' ) "
+        cur.execute(query)
+        new_row = None
+        for session in iter(cur.fetchall()):
+            session_id = session
+            elastic = requests.get(
+                "https://search-edriving-elk-2-x7jeuzd5bckjxkgtyohttwt66y.us-west-2.es.amazonaws.com/telematics-production-api-*/_search?q=method:POST%20AND%20path:" + str(
+                    session[0]) + "&size=10&_source_includes=platform,device,app,appVersion").content.decode(
+                "utf-8")
+            response_json = json.loads(elastic)
+            if response_json.get("hits") == None or response_json.get("hits") == "" or response_json.get(
+                    "hits").get(
+                "hits") == None or response_json.get("hits").get("hits") == "":
+                continue
+            for item in response_json.get("hits").get("hits"):
+                if item.get("_source") == None or item.get("_source") == "":
+                    continue
+                if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
+                    elasticrow = item.get("_source")
+                    flag = True
+                    new_row = {'driver_id': driver_id, 'trip_id': trip_id, 'local_date': local_date,
+                               'source': source,
+                               'session_id': str(session_id[0]),
+                               'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
+                               'platform': elasticrow.get('platform'), 'score': score,
+                               'distraction_count': manipu_count, 'distance': distance}
+                    break
+
+    elif source == 'MENTOR_NON_GEOTAB':
+        session_id = str(trip_id).split('-')[1]
+        elastic = requests.get(
+            "https://search-edriving-elk-2-x7jeuzd5bckjxkgtyohttwt66y.us-west-2.es.amazonaws.com/telematics-production-api-*/_search?q=method:POST%20AND%20path:" + str(
+                session_id) + "&size=10&_source_includes=platform,device,app,appVersion").content.decode(
+            "utf-8")
+        response_json = json.loads(elastic)
+        if response_json.get("hits") == None and response_json.get("hits") == "" and response_json.get("hits").get(
+                "hits") == None and response_json.get("hits").get("hits") == "":
+            return new_row
+        for item in response_json.get("hits").get("hits"):
+            if item.get("_source") == None or item.get("_source") == "":
+                continue
+            if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
+                elasticrow = item.get("_source")
+                flag = True
+                new_row = {'driver_id': driver_id, 'trip_id': trip_id, 'local_date': local_date,
+                           'source': source,
+                           'session_id': str(session_id),
+                           'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
+                           'platform': elasticrow.get('platform'), 'score': score,
+                           'distraction_count': manipu_count, 'distance': distance}
+                break
+    return new_row
+    if not flag:
+        print(driver_id, '-', local_date)
 
 def connectRedshift():
     con = psycopg2.connect(dbname='productionreportingdb',
@@ -29,102 +101,40 @@ def connectRedshift():
 def connectAurora():
     dataframe = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/redshiftwithdistance.csv")
 
-    # query = "select session_id from amzl_geotab.user_device_pairs where "
-    # for index, row in dataframe.iterrows():
-    #    date_object = datetime.strptime(row["local_date"], '%Y-%m-%d').date()
-    #    thedayafter = date_object + timedelta(days=1)
-    #    query = query + "(user_id = '" + str(row["driver_id"]) + "' and active_from between '" + row[
-    #        "local_date"] + "' and '" + str(thedayafter) + "' ) OR "
-
-    # query = query[:-3]
-    # print(query)
-
-    con = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
-                                  host='production-aurora-mentor.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
-                                  database='amzl_geotab')
-
-    cur = con.cursor(buffered=True)
     result = pd.DataFrame(
         columns=['driver_id', 'trip_id', 'local_date', 'source', 'score','distance', 'distraction_count', 'session_id', 'device',
                  'platform',
                  'appVersion'])
 
-    for index, row in dataframe.iterrows():
-        flag = False
-        session_id = ''
-        if row['source'] == 'MENTOR_GEOTAB':
-            thedayafter = datetime.strptime(row["local_date"], '%Y-%m-%d').date() + timedelta(days=1)
-            query = "select session_id from amzl_geotab.user_device_pairs where (user_id = '" + str(
-                row["driver_id"]) + "' and active_from between '" + row["local_date"] + "' and '" + str(
-                thedayafter) + "' ) "
-            cur.execute(query)
-            new_row = None
-            newrowcount = 0
-            for session in iter(cur.fetchall()):
-                session_id = session
-                elastic = requests.get(
-                    "https://search-edriving-elk-2-x7jeuzd5bckjxkgtyohttwt66y.us-west-2.es.amazonaws.com/telematics-production-api-*/_search?q=method:POST%20AND%20path:" + str(
-                        session[0]) + "&size=10&_source_includes=platform,device,app,appVersion").content.decode(
-                    "utf-8")
-                response_json = json.loads(elastic)
-                if response_json.get("hits") == None or response_json.get("hits") == "" or response_json.get(
-                        "hits").get(
-                    "hits") == None or response_json.get("hits").get("hits") == "":
-                    continue
-                for item in response_json.get("hits").get("hits"):
-                    if item.get("_source") == None or item.get("_source") == "":
-                        continue
-                    if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
-                        elasticrow = item.get("_source")
-                        flag = True
-                        new_row = {'driver_id': row["driver_id"], 'trip_id': row["trip_id"], 'local_date': row[1],
-                                   'source': row[2],
-                                   'session_id': str(session_id[0]),
-                                   'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
-                                   'platform': elasticrow.get('platform'), 'score': row['score'],
-                                   'distraction_count': row['manipu_count'],'distance':row['distance']}
-                        break
-            if new_row != None:
-                result = result.append(new_row, ignore_index=True)
-        elif row['source'] == 'MENTOR_NON_GEOTAB':
-            session_id = str(row['trip_id']).split('-')[1]
-            elastic = requests.get(
-                "https://search-edriving-elk-2-x7jeuzd5bckjxkgtyohttwt66y.us-west-2.es.amazonaws.com/telematics-production-api-*/_search?q=method:POST%20AND%20path:" + str(
-                    session_id) + "&size=10&_source_includes=platform,device,app,appVersion").content.decode(
-                "utf-8")
-            response_json = json.loads(elastic)
-            if response_json.get("hits") == None or response_json.get("hits") == "" or response_json.get("hits").get(
-                    "hits") == None or response_json.get("hits").get("hits") == "":
-                continue
-            for item in response_json.get("hits").get("hits"):
-                if item.get("_source") == None or item.get("_source") == "":
-                    continue
-                if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
-                    elasticrow = item.get("_source")
-                    flag = True
-                    new_row = {'driver_id': row["driver_id"], 'trip_id': row["trip_id"], 'local_date': row[1],
-                               'source': row[2],
-                               'session_id': str(session_id),
-                               'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
-                               'platform': elasticrow.get('platform'), 'score': row['score'],
-                               'distraction_count': row['manipu_count'],'distance':row['distance']}
-                    result = result.append(new_row, ignore_index=True)
-                    break
+    #for index, row in dataframe.iterrows():
+    pool = Pool(1)
 
-        if index % 100 == 0:
-            print(index)
-        if index == 60000:
-            break
-        if not flag:
-            print(row["driver_id"], '-', row["local_date"])
-    result.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final.csv")
+    input = []
+    for index, row in dataframe.iterrows():
+        input.append(
+            tuple((row['driver_id'], row['local_date'], row['source'], row['trip_id'], row['score'],
+                   row['distance'], row['manipu_count'])))
+
+    try:
+        with pool as p:
+            item = list(tqdm.tqdm(p.imap(multi_run_wrapper, input), total=len(input)))
+            if item != None:
+                for row in item:
+                    result = result.append(row, ignore_index=True)
+
+
+
+    except Exception as e:
+        print(e)
+        pool.terminate()
+        pool.join()
+        exit()
+    result.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final2.csv")
     print(result)
-    con.close()
 
 
 # connectRedshift()
 connectAurora()
-
 '''
 select t.driver_id, t.local_date,t.source, t.trip_id,s.score, count(*) from trips t join trip_scores s on s.trip_id=t.trip_id  left join trip_events e on t.trip_id = e.trip_id  where 
  t.source in ('MENTOR_NON_GEOTAB', 'MENTOR_GEOTAB') and t.local_date >= '2019-11-04' and t.local_date < '2019-11-10' and t.status='SUCCESS' 
