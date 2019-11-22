@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import *
 import requests
 import json
+from multiprocessing import Pool
 
 
 def connectRedshift():
@@ -26,7 +27,7 @@ def connectRedshift():
 
 
 def connectAurora():
-    dataframe = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/redshift.csv")
+    dataframe = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/redshiftwithdistance.csv")
 
     # query = "select session_id from amzl_geotab.user_device_pairs where "
     # for index, row in dataframe.iterrows():
@@ -44,7 +45,7 @@ def connectAurora():
 
     cur = con.cursor(buffered=True)
     result = pd.DataFrame(
-        columns=['driver_id', 'trip_id', 'local_date', 'source', 'score', 'distraction_count', 'session_id', 'device',
+        columns=['driver_id', 'trip_id', 'local_date', 'source', 'score','distance', 'distraction_count', 'session_id', 'device',
                  'platform',
                  'appVersion'])
 
@@ -78,10 +79,10 @@ def connectAurora():
                         flag = True
                         new_row = {'driver_id': row["driver_id"], 'trip_id': row["trip_id"], 'local_date': row[1],
                                    'source': row[2],
-                                   'session_id': str(session_id),
+                                   'session_id': str(session_id[0]),
                                    'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
                                    'platform': elasticrow.get('platform'), 'score': row['score'],
-                                   'distraction_count': row['manipu_count']}
+                                   'distraction_count': row['manipu_count'],'distance':row['distance']}
                         break
             if new_row != None:
                 result = result.append(new_row, ignore_index=True)
@@ -106,13 +107,13 @@ def connectAurora():
                                'session_id': str(session_id),
                                'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
                                'platform': elasticrow.get('platform'), 'score': row['score'],
-                               'distraction_count': row['manipu_count']}
+                               'distraction_count': row['manipu_count'],'distance':row['distance']}
                     result = result.append(new_row, ignore_index=True)
                     break
 
         if index % 100 == 0:
             print(index)
-        if index == 1000:
+        if index == 60000:
             break
         if not flag:
             print(row["driver_id"], '-', row["local_date"])
@@ -140,7 +141,7 @@ select e.trip_id, count(*) as countman from trip_events e where e.event_id='PHON
 on t.trip_id=m.trip_id where t.local_date >= '2019-11-04' and t.local_date < '2019-11-10' and t.status='SUCCESS' and  t.source in ('MENTOR_NON_GEOTAB', 'MENTOR_GEOTAB') 
 
 
-select t.driver_id, t.local_date,t.source, t.trip_id,s.score, nvl(m.countman,0) as manipu_count from trips t join trip_scores s on s.trip_id=t.trip_id left join (
+select t.driver_id, t.local_date,t.source, t.trip_id,s.score,t.distance, nvl(m.countman,0) as manipu_count from trips t join trip_scores s on s.trip_id=t.trip_id left join (
 select e.trip_id, count(*) as countman from trip_events e where e.event_id='PHONE_MANIPULATION' and  e.timestamp >= '2019-11-03' and e.timestamp < '2019-11-11' group by e.trip_id) m 
 on t.trip_id=m.trip_id where t.local_date >= '2019-11-04' and t.local_date < '2019-11-10' and t.status='SUCCESS' and  t.source in ('MENTOR_NON_GEOTAB', 'MENTOR_GEOTAB') 
 
