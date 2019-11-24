@@ -12,15 +12,15 @@ import tqdm
 def multi_run_wrapper(args):
     return multipool(*args)
 
-def multipool(driver_id,local_date,source,trip_id,score,
-                   distance,manipu_count):
+
+def multipool(driver_id, local_date, source, trip_id, score,
+              distance, manipu_count):
     flag = False
     new_row = None
     if source == 'MENTOR_GEOTAB':
         con = mysql.connector.connect(user='prodauroramaster', password='u9UQmPk6BtkP3V2Cyfuufvfy8Wm3jGhW5tTtc7FJt',
                                       host='production-aurora-mentor.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
                                       database='amzl_geotab')
-
         cur = con.cursor(buffered=True)
         thedayafter = datetime.strptime(local_date, '%Y-%m-%d').date() + timedelta(days=1)
         query = "select session_id from amzl_geotab.user_device_pairs where (user_id = '" + str(
@@ -28,6 +28,11 @@ def multipool(driver_id,local_date,source,trip_id,score,
             thedayafter) + "' ) "
         cur.execute(query)
         new_row = None
+        if cur.rowcount == 0:
+            query = "select session_id from amzl_geotab.user_device_pairs_bak where (user_id = '" + str(
+                driver_id) + "' and active_from between '" + local_date + "' and '" + str(
+                thedayafter) + "' ) "
+            cur.execute(query)
         for session in iter(cur.fetchall()):
             session_id = session
             elastic = requests.get(
@@ -51,7 +56,9 @@ def multipool(driver_id,local_date,source,trip_id,score,
                                'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
                                'platform': elasticrow.get('platform'), 'score': score,
                                'distraction_count': manipu_count, 'distance': distance}
+                    con.close()
                     break
+        con.close()
 
     elif source == 'MENTOR_NON_GEOTAB':
         session_id = str(trip_id).split('-')[1]
@@ -77,18 +84,16 @@ def multipool(driver_id,local_date,source,trip_id,score,
                            'distraction_count': manipu_count, 'distance': distance}
                 break
     return new_row
-    if not flag:
-        print(driver_id, '-', local_date)
+
+
 
 def connectRedshift():
     con = psycopg2.connect(dbname='productionreportingdb',
                            host='edriving-telematics-production-reporting-db.c4bepljyphir.us-west-2.redshift.amazonaws.com',
                            port='5439', user='telematics_readonly', password='telematicsReadOnly123')
     cur = con.cursor()
-
     cur.execute(
         "select driver_id, local_date,source, trip_id from trips where source in ('MENTOR_NON_GEOTAB', 'MENTOR_GEOTAB') and local_date >= '2019-11-01' and status='SUCCESS' LIMIT 10;")
-
     result = pd.DataFrame(columns=['driver_id', 'local_date', 'source', 'trip_id'])
     if cur.rowcount > 0:
         for row in iter(cur.fetchall()):
@@ -100,20 +105,21 @@ def connectRedshift():
 
 def connectAurora():
     dataframe = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/redshiftwithdistance.csv")
-
     result = pd.DataFrame(
-        columns=['driver_id', 'trip_id', 'local_date', 'source', 'score','distance', 'distraction_count', 'session_id', 'device',
+        columns=['driver_id', 'trip_id', 'local_date', 'source', 'score', 'distance', 'distraction_count', 'session_id',
+                 'device',
                  'platform',
                  'appVersion'])
 
-    #for index, row in dataframe.iterrows():
-    pool = Pool(1)
+    # for index, row in dataframe.iterrows():
+    pool = Pool(6)
 
     input = []
     for index, row in dataframe.iterrows():
-        input.append(
-            tuple((row['driver_id'], row['local_date'], row['source'], row['trip_id'], row['score'],
-                   row['distance'], row['manipu_count'])))
+        if index > 50000 and index < 100000:
+            input.append(
+                tuple((row['driver_id'], row['local_date'], row['source'], row['trip_id'], row['score'],
+                       row['distance'], row['manipu_count'])))
 
     try:
         with pool as p:
@@ -129,12 +135,38 @@ def connectAurora():
         pool.terminate()
         pool.join()
         exit()
-    result.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final2.csv")
+    result.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final.csv")
     print(result)
 
 
 # connectRedshift()
-connectAurora()
+#connectAurora()
+
+
+def mergefiles():
+    #part1 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final0-50000.csv", index_col=False)
+    #part2 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final50000-100000.csv", index_col=False)
+    #part3 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final100000-170000.csv")
+    finalall = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final_all.csv")
+    #finalall =finalall.drop(columns=["Unnamed: 0","Unnamed: 0.1","Unnamed: 0.1.1"])
+    print(finalall.head())
+    #finalall = pd.concat([finalallf,part3])
+    finalall.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final_all.csv")
+
+#mergefiles()
+
+
+def analysis():
+    finalall = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final_all.csv")
+    filtered = finalall[finalall["appVersion"] != 1.19]
+    mostcommondevices = filtered.groupby("device")['trip_id'].count().nlargest(10)
+    print(mostcommondevices)
+    groupbymanipulation = filtered.groupby('device', as_index=False)['distraction_count'].mean().sort_values(['distraction_count'],ascending=True)
+    mostcommondevices = mostcommondevices.index.get_level_values(0)
+    groupbymanipulation = groupbymanipulation[groupbymanipulation["device"].isin(mostcommondevices)]
+    print(groupbymanipulation)
+
+analysis()
 '''
 select t.driver_id, t.local_date,t.source, t.trip_id,s.score, count(*) from trips t join trip_scores s on s.trip_id=t.trip_id  left join trip_events e on t.trip_id = e.trip_id  where 
  t.source in ('MENTOR_NON_GEOTAB', 'MENTOR_GEOTAB') and t.local_date >= '2019-11-04' and t.local_date < '2019-11-10' and t.status='SUCCESS' 
