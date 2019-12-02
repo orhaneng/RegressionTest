@@ -86,7 +86,6 @@ def multipool(driver_id, local_date, source, trip_id, score,
     return new_row
 
 
-
 def connectRedshift():
     con = psycopg2.connect(dbname='productionreportingdb',
                            host='edriving-telematics-production-reporting-db.c4bepljyphir.us-west-2.redshift.amazonaws.com',
@@ -140,31 +139,47 @@ def connectAurora():
 
 
 # connectRedshift()
-#connectAurora()
+# connectAurora()
 
 
 def mergefiles():
-    #part1 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final0-50000.csv", index_col=False)
-    #part2 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final50000-100000.csv", index_col=False)
-    #part3 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final100000-170000.csv")
+    # part1 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final0-50000.csv", index_col=False)
+    # part2 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final50000-100000.csv", index_col=False)
+    # part3 = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final100000-170000.csv")
     finalall = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final_all.csv")
-    #finalall =finalall.drop(columns=["Unnamed: 0","Unnamed: 0.1","Unnamed: 0.1.1"])
+    # finalall =finalall.drop(columns=["Unnamed: 0","Unnamed: 0.1","Unnamed: 0.1.1"])
     print(finalall.head())
-    #finalall = pd.concat([finalallf,part3])
+    # finalall = pd.concat([finalallf,part3])
     finalall.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final_all.csv")
 
-#mergefiles()
+
+# mergefiles()
 
 
 def analysis():
     finalall = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final_all.csv")
+
+    # finalall.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final_all.csv")
     filtered = finalall[finalall["appVersion"] != 1.19]
-    mostcommondevices = filtered.groupby("device")['trip_id'].count().nlargest(10)
-    print(mostcommondevices)
-    groupbymanipulation = filtered.groupby('device', as_index=False)['distraction_count'].mean().sort_values(['distraction_count'],ascending=True)
+    mostcommondevices = finalall.groupby("device")['trip_id'].count().nlargest(20)
     mostcommondevices = mostcommondevices.index.get_level_values(0)
-    groupbymanipulation = groupbymanipulation[groupbymanipulation["device"].isin(mostcommondevices)]
-    print(groupbymanipulation)
+    filtered = filtered[filtered["device"].isin(mostcommondevices)]
+    # mostcommondevices.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/countbydevices.csv")
+    # print(mostcommondevices)
+    # groupbymanipulation = filtered.groupby(['source', 'device'], as_index=False)[
+    #    'distraction_count'].mean().sort_values(
+    #    ['source', 'distraction_count'], ascending=False)
+
+    # finalall[['distance', 'distraction_count']] = finalall[['distance', 'distraction_count']].astype(float)
+    groupbymanipulation = filtered.groupby(['source', 'device'], as_index=False).apply(
+        lambda x: (x['distraction_count'].sum() / (x['distance'].sum() / (1000 * 1.6))) * 1000)
+
+    groupbymanipulation.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/groupbydeviceTOP20.csv")
+    # print("count of different devices:", len(finalall["device"].unique()))
+
+    # print(groupbymanipulation)
+
 
 analysis()
 '''
