@@ -3,66 +3,77 @@ import pandas as pd
 import datetime
 import requests
 import sys
+import os
+from jsondiff import diff
+import json
 
 
-def getTripsFromRegressionServer():
-    # Retrieve data from regression server
-    #client = boto3.client('dynamodb', endpoint_url='http://localhost:8000')
-    from jsondiff import diff
-    import json
+def getTripsFromRegressionServer(path):
+    result = pd.DataFrame()
+    fileslist = []
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            path = os.path.join(root, name)
+            if path.endswith('.json'):
+                fileslist.append(path)
+    count = 0
+    totalcount = len(fileslist)
+    for path in fileslist:
+        if count % 100 == 0:
+            sys.stdout.write('\r' + "Local processing:" + str(count) + "/" + str(totalcount))
+            sys.stdout.flush()
+        result = result.append(processJSONFile(path))
+        count = count + 1
+        if count == len(fileslist):
+            sys.stdout.write('\r' + "Local processing:" + str(totalcount) + "/" + str(totalcount))
+            sys.stdout.flush()
 
-    with open('/Users/omerorhan/Documents/EventDetection/json/trip1.json') as f:
+    print()
+    result.sort_values(['driver_id', 'start_time'], inplace=True)
+    return result
+
+
+def processJSONFile(file):
+    # print(file)
+    with open(file, encoding='utf-8') as f:
         trip_json = json.load(f)
-    #eventcounts = client.describe_table(TableName='tlm_trip').get("Table").get("ItemCount")
-    #print("Processed events:", eventcounts, "trips")
-    #paginator = client.get_paginator('scan')
-    #page_iterator = paginator.paginate(TableName='tlm_event', Limit=200)
     trip_events = {}
     count = 0
-    #for page in page_iterator:
-    #    for item in page["Items"]:
     count += 1
-    if count % 1000 == 0:
-        #sys.stdout.write('\r' + "Total trip count from server is:" + str(count) + "/" + str(eventcounts))
-        sys.stdout.flush()
-        #print("Processing event:", count)
     trip_id = trip_json["tripId"]
 
     if trip_json["tripId"] == None:
         trip_events[trip_id] = {}
-    event_dict = {} #trip_events.get(trip_id)
+    event_dict = {}  # trip_events.get(trip_id)
 
     if trip_json["events"] != None:
         for event in trip_json["events"]:
             e_name = event["eventType"]
-            e_start = event["startTimestamp"]
-            e_end = event["endTimestamp"]
 
-            duration = (e_end - e_start)/1000.0
-            if event_dict.get(e_name)== None:
+            e_start = (datetime.datetime.fromtimestamp(event["startTimestamp"]["seconds"]) + datetime.timedelta(
+                microseconds=event["startTimestamp"]["nanos"] / 1000)).isoformat(timespec='milliseconds')
+            e_end = (datetime.datetime.fromtimestamp(event["endTimestamp"]["seconds"]) + datetime.timedelta(
+                microseconds=event["endTimestamp"]["nanos"] / 1000)).isoformat(timespec='milliseconds')
+
+            start = datetime.datetime(int(e_start[:4]), int(e_start[5:7]), int(e_start[8:10]),
+                                      int(e_start[11:13]), int(e_start[14:16]),
+                                      int(e_start[17:19]), int(e_start[20:23]) * 1000)
+            end = datetime.datetime(int(e_end[:4]), int(e_end[5:7]), int(e_end[8:10]),
+                                    int(e_end[11:13]), int(e_end[14:16]),
+                                    int(e_end[17:19]), int(e_end[20:23]) * 1000)
+            duration = (end - start).total_seconds() + 1
+            if event_dict.get(e_name) == None:
                 event_dict[e_name] = [0, 0]
             event_dict[e_name][0] += 1
             event_dict[e_name][1] += duration
-
-    #page_iterator = paginator.paginate(TableName='tlm_trip', Limit=200)
     trips = pd.DataFrame(columns=["driver_id", "trip_id", "start_time", "score", "events"])
-    count = 0
     index = 0
-    if count > 1000:
-        print()
-    #for page in page_iterator:
-    #    for item in page["Items"]:
     score = "None"
-    if trip_json["scores"] != None:
+    if "scores" in trip_json:
         score = "None" if trip_json["scores"][0]["rating"] == None else \
-            trip_json["scores"][0]["value"]
+            trip_json["scores"][0]["score"]
     trips.loc[index] = [trip_json["driverId"], trip_json["tripId"], trip_json["startTimestamp"], score, []]
     index += 1
-    #count += page["Count"]
-    #sys.stdout.write('\r' + "Total trip count from server is:" + str(count) + "/" + str(eventcounts))
-    sys.stdout.flush()
-        #print("Total trip count from server is:", str(count))
-
     event_definition = ["STOP", "START", "SMOOTH_STOP", "SMOOTH_START",
                         "RIGHT_TURN", "LEFT_TURN", "SMOOTH_RIGHT_TURN", "SMOOTH_LEFT_TURN",
                         "HARD_ACCELERATION", "HARD_BRAKING", "HARD_CORNERING",
@@ -85,35 +96,22 @@ def getTripsFromRegressionServer():
                                    "displayed_speeding_count", "displayed_speeding_duration"])
 
     result_index = 0
-    print()
     for index in list(trips.index):
-        if result_index % 100 == 0:
-            sys.stdout.write('\r' + "Local processing:" + str(result_index) + "/" + str(len(list(trips.index))))
-            sys.stdout.flush()
-            # print("Local processing:"+str( result_index))
         trip_id = trips.loc[index, "trip_id"]
         row = []
         row.append(trip_id)
         row.append(trips.loc[index, "driver_id"])
-        row.append(trips.loc[index, "start_time"])
+        e_start = (datetime.datetime.fromtimestamp(trips.loc[index, "start_time"]["seconds"]) + datetime.timedelta(
+            microseconds=trips.loc[index, "start_time"]["nanos"] / 1000)).isoformat(timespec='milliseconds')
+        row.append(e_start)
         row.append(trips.loc[index, "score"])
         for definition in event_definition:
-            trip_event = trip_events.get(trip_id)
-            if trip_event != None and trip_event.get(definition) != None:
-                row.append(trip_event.get(definition)[0])
-                row.append(trip_event.get(definition)[1])
+            if event_dict != None and event_dict.get(definition) != None:
+                row.append(event_dict.get(definition)[0])
+                row.append(event_dict.get(definition)[1])
             else:
                 row.append(0)
                 row.append(0)
         result.loc[result_index] = row
         result_index += 1
-    sys.stdout.write('\r' + "Local processing:" + str(len(list(trips.index))) + "/" + str(len(list(trips.index))))
-    sys.stdout.flush()
-    print()
-    result.sort_values(["driver_id", "start_time", ], inplace=True)
     return result
-
-# result = getTripsFromRegressionServer()
-# result.sort_values([ "driver_id", "start_time", ], inplace = True)
-# result.to_csv("/Users/omerorhan/Documents/EventDetection/multiprocess/all_event_local.csv", index = False)
-getTripsFromRegressionServer()

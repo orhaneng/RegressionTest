@@ -7,7 +7,7 @@ class RegressionTypeEnum(Enum):
 
 class RegressionProcessTypeEnum(Enum):
     RegressionTest = "1"
-    RegressionUpdateMainTripresults = "2"
+    RegressionUpdateBaseTripresults = "2"
     RegressionMapBase = "3"
 
 

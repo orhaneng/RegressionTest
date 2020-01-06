@@ -64,6 +64,9 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
         exit()
 
     log_dataframe = pd.DataFrame(log)
+    if len(log) <2:
+        print("no data")
+        exit()
     log_dataframe.columns = ['trip_id', 's3_key']
     return log_dataframe
 
@@ -78,25 +81,27 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
         file_dir = batch_file_dir + driver_id + '/' + file_name
         upload_url = server_url + '/' + driver_id + '/trips'
         response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
-        response_json = json.loads(response.content)
     elif regressiontype == RegressionTypeEnum.NonArmada:
         server_url = 'http://localhost:8080/api/v3/drivers/'
         timestamp = '{"time": ' + str(int(round(time.time() * 1000))) + '}'
         upload_url = server_url + str(driver_id) + '/trips/' + file_name
         headers = {'Content-Type': 'application/json'}
         response = requests.post(upload_url, data=timestamp, headers=headers)
-        response_json = json.loads(response.content)
-
-    if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
-        print("unsaved mapping data " + response_json.get('reasonDetail'))
-        raise Exception("unsaved mapping data")
-
+    response_json = None
+    #if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
+    #    print("unsaved mapping data " + response_json.get('reasonDetail'))
+    #    raise Exception("unsaved mapping data")
     if response.status_code != 200 and response.status_code != 400:
         print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
             response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
-
+    if response.status_code == 400 and 'bad gps data' in str(response.content):
+        print('bad gps data-'+"driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
+            response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
     log_row = []
-    log_row.append(str(response_json.get('tripId')))
+    if response.status_code == 200:
+        response_json = json.loads(response.content)
+        log_row.append(str(response_json.get('tripId')))
+
     log_row.append(file_name)
 
     return log_row

@@ -1,6 +1,5 @@
-from src.clear_database import clear_dynamodb
 from src.telematicsmultiprocess import uploadTripFilesandProcess
-from src.get_trip_from_regression import getTripsFromRegressionServer
+from src.get_trip_from_regression_json import getTripsFromRegressionServer
 from src.comparision import compareTrips
 from src.comparision import checkfolder
 from enum import Enum
@@ -138,7 +137,7 @@ def startregressiontest():
 
     regressionProcessType, poolsize, regressionType = gettinginputs()
 
-    checkDynamoDBProcess()
+    #checkDynamoDBProcess()
 
     print("Checking telematics folder in build folder...")
 
@@ -159,16 +158,43 @@ def startregressiontest():
     print("Current Telematics version:" + version)
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 6,
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 4,
                                                   regressionProcessType, regressionType)
     else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 10,
+        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 2,
                                                   regressionProcessType, regressionType)
-    trip_results = getTripsFromRegressionServer()
+
+    # copy json files temp to pools
+    if regressionType == RegressionTypeEnum.MentorBusiness:
+        if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase or regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
+            os.system(
+                "rm -r " + FOLDER_PATH + "jsonfiles/mentorbusiness/basefiles/" + poolsize.value + "/*")
+            os.system(
+                "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/mentorbusiness/basefiles/" + poolsize.value)
+            trip_results = getTripsFromRegressionServer(FOLDER_PATH + "jsonfiles/mentorbusiness/basefiles/" + poolsize.value)
+
+        else:
+            os.system(
+                "rm -r " + FOLDER_PATH + "jsonfiles/mentorbusiness/files/" + poolsize.value + "/*")
+            os.system(
+                "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/mentorbusiness/files/" + poolsize.value)
+            trip_results = getTripsFromRegressionServer(FOLDER_PATH + "jsonfiles/mentorbusiness/files/" + poolsize.value)
+
+    elif regressionType == RegressionTypeEnum.NonArmada:
+        if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
+            os.system(
+                "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/non-armada/basefiles/" + poolsize.value)
+            trip_results = getTripsFromRegressionServer(FOLDER_PATH + "jsonfiles/non-armada/basefiles/" + poolsize.value)
+
+        else:
+            os.system(
+                "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/non-armada/files/" + poolsize.value)
+            trip_results = getTripsFromRegressionServer(
+                FOLDER_PATH + "jsonfiles/non-armada/files/" + poolsize.value)
+
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
-
-    if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateMainTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
+    if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
         combinedresult_s3key.to_csv(
@@ -185,5 +211,3 @@ def startregressiontest():
     finishdt = datetime.datetime.now()
     print("Start at " + str(currentDT))
     print("Finish at " + str(finishdt))
-
-# startregressiontest()
