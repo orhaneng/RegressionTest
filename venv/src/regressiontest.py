@@ -108,7 +108,7 @@ def gettinginputs():
             print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
             poolsize = PoolSize(input("Selection:"))
         else:
-            poolsize = PoolSize.POOL_NANARMADA
+            poolsize = PoolSize.POOL_NONARMADA
 
 
     except ValueError:

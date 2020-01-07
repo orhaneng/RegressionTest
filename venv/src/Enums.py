@@ -17,7 +17,7 @@ class PoolSize(Enum):
     POOL_20000 = "20000"
     POOL_50000 = "50000"
     POOL_100000 = "100000"
-    POOL_NANARMADA="non-armada"
+    POOL_NONARMADA="non-armada"
 
 
 class JSONfilenameEnum(Enum):
