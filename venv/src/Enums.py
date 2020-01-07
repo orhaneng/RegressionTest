@@ -1,8 +1,8 @@
 from enum import Enum
 
 class RegressionTypeEnum(Enum):
-    MentorBusiness = "1"
-    NonArmada = "2"
+    MentorBusiness = "mentorbusiness"
+    NonArmada = "non-armada"
 
 
 class RegressionProcessTypeEnum(Enum):
@@ -18,3 +18,8 @@ class PoolSize(Enum):
     POOL_50000 = "50000"
     POOL_100000 = "100000"
     POOL_NANARMADA="non-armada"
+
+
+class JSONfilenameEnum(Enum):
+    base = "basefiles"
+    file = "files"

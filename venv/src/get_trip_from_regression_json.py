@@ -15,14 +15,14 @@ def getTripsFromRegressionServer(path):
         for name in files:
             path = os.path.join(root, name)
             if path.endswith('.json'):
-                fileslist.append(path)
+                fileslist.append([path,name])
     count = 0
     totalcount = len(fileslist)
-    for path in fileslist:
+    for path, name in fileslist:
         if count % 100 == 0:
             sys.stdout.write('\r' + "Local processing:" + str(count) + "/" + str(totalcount))
             sys.stdout.flush()
-        result = result.append(processJSONFile(path))
+        result = result.append(processJSONFile(path, name))
         count = count + 1
         if count == len(fileslist):
             sys.stdout.write('\r' + "Local processing:" + str(totalcount) + "/" + str(totalcount))
@@ -33,8 +33,9 @@ def getTripsFromRegressionServer(path):
     return result
 
 
-def processJSONFile(file):
-    # print(file)
+def processJSONFile(file, name):
+    trip_id = name.split('.')[2]
+    print(trip_id)
     with open(file, encoding='utf-8') as f:
         trip_json = json.load(f)
     trip_events = {}
@@ -70,7 +71,7 @@ def processJSONFile(file):
     index = 0
     score = "None"
     if "scores" in trip_json:
-        score = "None" if trip_json["scores"][0]["rating"] == None else \
+        score = "None" if not("rating" in trip_json["scores"][0]) else \
             trip_json["scores"][0]["score"]
     trips.loc[index] = [trip_json["driverId"], trip_json["tripId"], trip_json["startTimestamp"], score, []]
     index += 1
@@ -115,3 +116,5 @@ def processJSONFile(file):
         result.loc[result_index] = row
         result_index += 1
     return result
+
+#getTripsFromRegressionServer("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/jsonfiles/mentorbusiness/basefiles/1000")

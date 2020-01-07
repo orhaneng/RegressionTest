@@ -84,10 +84,25 @@ def gettinginputs():
     try:
         print(
             "Select your type.. (1-Mentor Business 2-Non-Armada)")
-        regressionType = RegressionTypeEnum(input("Selection:"))
+        selectionregressiontype = input("Selection:")
+        if selectionregressiontype == "1":
+            regressionType = RegressionTypeEnum.MentorBusiness
+        elif selectionregressiontype == "2":
+            regressionType = RegressionTypeEnum.NonArmada
+        else:
+            print("The selection is not valid!")
+            exit()
+
         print(
             "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
         regressionProcessType = RegressionProcessTypeEnum(input("Selection:"))
+
+        if regressionProcessType == RegressionProcessTypeEnum.RegressionTest:
+            jsonfilenameEnum = JSONfilenameEnum.file
+            threadsize = 4
+        else:
+            jsonfilenameEnum = JSONfilenameEnum.base
+            threadsize = 2
 
         if regressionType == RegressionTypeEnum.MentorBusiness:
             print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
@@ -95,10 +110,11 @@ def gettinginputs():
         else:
             poolsize = PoolSize.POOL_NANARMADA
 
+
     except ValueError:
         print("The selection is not valid!")
         exit()
-    return regressionProcessType, poolsize, regressionType
+    return regressionProcessType, poolsize, regressionType, jsonfilenameEnum, threadsize
 
 
 def controlfolderfileprocess(regressionProcessType, regressionType):
@@ -112,21 +128,12 @@ def controlfolderfileprocess(regressionProcessType, regressionType):
         exit()
 
     print("Copying config files!")
-    if regressionType == RegressionTypeEnum.MentorBusiness:
-        if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-            os.system(
-                "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/mentorbusiness/config " + FOLDER_PATH + "build/telematics-server/")
-        else:
-            os.system(
-                "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/mentorbusiness/config " + FOLDER_PATH + "build/telematics-server/")
-    elif regressionType == RegressionTypeEnum.NonArmada:
-        if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-            os.system(
-                "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/non-armada/config " + FOLDER_PATH + "build/telematics-server/")
-        else:
-            os.system(
-                "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/non-armada/config " + FOLDER_PATH + "build/telematics-server/")
-
+    if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
+        os.system(
+            "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/" + regressionType.value + "/config " + FOLDER_PATH + "build/telematics-server/")
+    else:
+        os.system(
+            "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/" + regressionType.value + "/config " + FOLDER_PATH + "build/telematics-server/")
     return FOLDER_PATH
 
 
@@ -135,9 +142,9 @@ def startregressiontest():
     print("Starting Time:" + str(currentDT))
     print("Be sure to put your new telematics folder in /home/ec2-user/regressiontest/build !!")
 
-    regressionProcessType, poolsize, regressionType = gettinginputs()
+    regressionProcessType, poolsize, regressionType, jsonfilenameEnum, threadsize = gettinginputs()
 
-    #checkDynamoDBProcess()
+    # checkDynamoDBProcess()
 
     print("Checking telematics folder in build folder...")
 
@@ -145,6 +152,9 @@ def startregressiontest():
 
     print("Killing old telematics processes if exits...")
     killoldtelematicsprocess()
+
+    os.system(
+        "rm -r " + FOLDER_PATH + "jsonfiles/temp")
 
     print("Starting telematics...")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
@@ -157,52 +167,41 @@ def startregressiontest():
                   ".csv")[0])
     print("Current Telematics version:" + version)
 
-    if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 4,
-                                                  regressionProcessType, regressionType)
-    else:
-        log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", 2,
-                                                  regressionProcessType, regressionType)
+    log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", threadsize,
+                                              regressionProcessType, regressionType)
 
     # copy json files temp to pools
-    if regressionType == RegressionTypeEnum.MentorBusiness:
-        if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase or regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
-            os.system(
-                "rm -r " + FOLDER_PATH + "jsonfiles/mentorbusiness/basefiles/" + poolsize.value + "/*")
-            os.system(
-                "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/mentorbusiness/basefiles/" + poolsize.value)
-            trip_results = getTripsFromRegressionServer(FOLDER_PATH + "jsonfiles/mentorbusiness/basefiles/" + poolsize.value)
-
-        else:
-            os.system(
-                "rm -r " + FOLDER_PATH + "jsonfiles/mentorbusiness/files/" + poolsize.value + "/*")
-            os.system(
-                "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/mentorbusiness/files/" + poolsize.value)
-            trip_results = getTripsFromRegressionServer(FOLDER_PATH + "jsonfiles/mentorbusiness/files/" + poolsize.value)
-
-    elif regressionType == RegressionTypeEnum.NonArmada:
-        if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-            os.system(
-                "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/non-armada/basefiles/" + poolsize.value)
-            trip_results = getTripsFromRegressionServer(FOLDER_PATH + "jsonfiles/non-armada/basefiles/" + poolsize.value)
-
-        else:
-            os.system(
-                "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/non-armada/files/" + poolsize.value)
-            trip_results = getTripsFromRegressionServer(
-                FOLDER_PATH + "jsonfiles/non-armada/files/" + poolsize.value)
-
+    os.system(
+        "rm -r " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value + "/*")
+    os.system(
+        "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
+    trip_results = getTripsFromRegressionServer(
+        FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
+
+    #trip_id is coming random from telematics server. That's why, filenames are being changed by s3_key. It is the only primary paramater.
+    if regressionType == RegressionTypeEnum.MentorBusiness:
+        for index, row in combinedresult_s3key.iterrows():
+            filename = "trip." + row["driver_id"] + "." + row["trip_id"] + ".json"
+
+            rootpath = FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value + "/" + \
+                       row["driver_id"] + "/"
+            os.system(
+                "mv " + rootpath + filename + " " + rootpath + row["s3_key"] + ".json"
+            )
+
     if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
         combinedresult_s3key.to_csv(
-            FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + ".csv", index=False)
+            FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/trip_results" + version + ".csv",
+            index=False)
     else:
         VersionFile(FOLDER_PATH + "tripresults/" + poolsize.value + "/", ".csv")
         combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
-        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv", index=False)
+        combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv",
+                                    index=False)
         comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType)
         print("Report is ready! Check reports folder!")
         print(comparisionpath)
