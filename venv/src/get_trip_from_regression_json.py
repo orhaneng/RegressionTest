@@ -1,11 +1,14 @@
+from multiprocessing import Pool
+from jsondiff import diff
+
 import boto3
 import pandas as pd
 import datetime
 import requests
 import sys
 import os
-from jsondiff import diff
 import json
+import tqdm
 
 
 def getTripsFromRegressionServer(path):
@@ -22,7 +25,7 @@ def getTripsFromRegressionServer(path):
         if count % 100 == 0:
             sys.stdout.write('\r' + "Local processing:" + str(count) + "/" + str(totalcount))
             sys.stdout.flush()
-        result = result.append(processJSONFile(path, name))
+        result = result.append(processJSONFile(path))
         count = count + 1
         if count == len(fileslist):
             sys.stdout.write('\r' + "Local processing:" + str(totalcount) + "/" + str(totalcount))
@@ -33,9 +36,7 @@ def getTripsFromRegressionServer(path):
     return result
 
 
-def processJSONFile(file, name):
-    trip_id = name.split('.')[2]
-    print(trip_id)
+def processJSONFile(file):
     with open(file, encoding='utf-8') as f:
         trip_json = json.load(f)
     trip_events = {}
@@ -116,5 +117,3 @@ def processJSONFile(file, name):
         result.loc[result_index] = row
         result_index += 1
     return result
-
-#getTripsFromRegressionServer("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/jsonfiles/mentorbusiness/basefiles/1000")

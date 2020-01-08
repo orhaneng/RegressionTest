@@ -99,7 +99,7 @@ def gettinginputs():
 
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest:
             jsonfilenameEnum = JSONfilenameEnum.file
-            threadsize = 4
+            threadsize = 2
         else:
             jsonfilenameEnum = JSONfilenameEnum.base
             threadsize = 2
@@ -202,7 +202,7 @@ def startregressiontest():
         combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
         combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv",
                                     index=False)
-        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType)
+        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType, threadsize)
         print("Report is ready! Check reports folder!")
         print(comparisionpath)
 

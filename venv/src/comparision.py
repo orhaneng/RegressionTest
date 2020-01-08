@@ -1,4 +1,8 @@
 from src.datacompy.core import *
+from src.jsoncomparision import checktwoJSONfiles
+from multiprocessing import Pool
+import tqdm
+
 import pandas as pd
 import xlsxwriter
 import sys
@@ -9,8 +13,7 @@ import datetime
 from src.Enums import *
 
 
-
-def compareTrips(path, poolsize, version, regressionType):
+def compareTrips(path, poolsize, version, regressionType, threadsize):
     VersionFile(path + "reports/" + poolsize + "/", ".xlsx")
 
     filepath = path + "reports/" + poolsize + "/regression_report" + version + ".xlsx"
@@ -39,7 +42,9 @@ def compareTrips(path, poolsize, version, regressionType):
             path + "tripresults/maintripresult/" + poolsize), checkfolder(path + "tripresults/" + poolsize),
             str(datetime.datetime.now())]})
     versions.to_excel(writer, sheet_name='Summary', startrow=1, startcol=1)
-
+    print("started json")
+    writer = JSONcomparision(path, poolsize, writer, regressionType, threadsize)
+    print("ended json")
     compare.report(writer, sys.maxsize)
     driverScoreComparision(writer, df1, df2)
     writer.save()
@@ -82,4 +87,46 @@ def driverScoreComparision(writer, df1, df2):
     df_final = df_final.style.apply(highlight_diff, axis=None)
     df_final.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
 
-#compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "non-armada", '3.2.5')
+
+# compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "non-armada", '3.2.5')
+def multi_run_wrapper(args):
+    return checktwoJSONfiles(*args)
+
+def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
+    import pandas as pd
+    rootpath = path + "jsonfiles/" + regressionType.value + "/"
+
+    filelist = []
+    basepath = rootpath + str(JSONfilenameEnum.base.value) + "/" + str(poolsize) + "/"
+    for root, dirs, files in os.walk(rootpath + str(JSONfilenameEnum.file.value) + "/" + str(poolsize) + "/"):
+        for name in files:
+            path = os.path.join(root, name)
+
+            if path.endswith('.json'):
+                driver_id = path.split('/')[-2]
+                filelist.append([path, basepath + driver_id + "/" + name, name])
+    result = pd.DataFrame(columns=["s3_key", "isIdentical", "comparision"])
+    isallfilesidentical = True
+
+    pool = Pool(2)
+    try:
+        with pool as p:
+            print("Pool-size:", len(filelist))
+            comparisonresult = list(tqdm.tqdm(p.imap(multi_run_wrapper, filelist), total=len(filelist)))
+            for item in comparisonresult:
+                if not bool(item[0]):
+                    isallfilesidentical = False
+                new_row = {'s3_key': item[1], 'isIdentical': not bool(item[0]), "comparision": item[0]}
+                result = result.append(new_row, ignore_index=True)
+
+    except Exception as e:
+        print(e)
+        pool.terminate()
+        pool.join()
+        exit()
+
+    head = pd.DataFrame(columns=["All trips are " + ("identical" if not isallfilesidentical else "not identical")])
+    head.to_excel(writer, sheet_name='JSON Comparision', startrow=1, startcol=1)
+    result.to_excel(writer, sheet_name='JSON Comparision', startrow=2, startcol=1)
+    print("Files are ", "identical" if isallfilesidentical else "not identical")
+    return writer
