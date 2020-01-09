@@ -167,8 +167,9 @@ def connect2Aurora():
                                           database='telematics')
             cur = con.cursor(buffered=True)
 
-        query = "select end_time from telematics.driving_sessions where driver_id='" + str(row[0]) + "' and session_id = '" + \
-               str(row[1].split('-')[1]) + "'"
+        query = "select end_time from telematics.driving_sessions where driver_id='" + str(
+            row[0]) + "' and session_id = '" + \
+                str(row[1].split('-')[1]) + "'"
         cur.execute(query)
         res = cur.fetchall()
         timestamp = ''
@@ -187,7 +188,7 @@ def connect2Aurora():
         "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/dataconversion/amazon3.csv")
 
 
-#connect2Aurora()
+# connect2Aurora()
 
 
 def getsessionidindriver():
@@ -215,6 +216,7 @@ def getsessionidindriver():
                 sessionidlist.append(file_names[idx][jdx].split('_')[0])
         setsessionlist = list(set(sessionidlist))
         print(setsessionlist)
+
 
 getsessionidindriver()
 '''

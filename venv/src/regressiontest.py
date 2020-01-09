@@ -99,9 +99,12 @@ def gettinginputs():
 
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest:
             jsonfilenameEnum = JSONfilenameEnum.file
-            threadsize = 2
         else:
             jsonfilenameEnum = JSONfilenameEnum.base
+
+        if regressionProcessType == RegressionProcessTypeEnum.RegressionTest or RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
+            threadsize = 8
+        else:
             threadsize = 2
 
         if regressionType == RegressionTypeEnum.MentorBusiness:
@@ -175,8 +178,9 @@ def startregressiontest():
         "rm -r " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value + "/*")
     os.system(
         "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
+    print("reading trips from JSON files")
     trip_results = getTripsFromRegressionServer(
-        FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
+        FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value, threadsize)
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 

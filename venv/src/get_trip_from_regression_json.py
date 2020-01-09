@@ -10,18 +10,35 @@ import os
 import json
 import tqdm
 
+def multi_run_wrapper(args):
+    return processJSONFile(*args)
 
-def getTripsFromRegressionServer(path):
+def getTripsFromRegressionServer(path, threadsize):
     result = pd.DataFrame()
-    fileslist = []
+    filelist = []
     for root, dirs, files in os.walk(path):
         for name in files:
             path = os.path.join(root, name)
             if path.endswith('.json'):
-                fileslist.append([path,name])
+                filelist.append([path])
+    pool = Pool(threadsize)
+    try:
+        with pool as p:
+            print("Pool-size:", len(filelist))
+            comparisonresult = list(tqdm.tqdm(p.imap(multi_run_wrapper, filelist), total=len(filelist)))
+            for item in comparisonresult:
+                result = result.append(item)
+
+    except Exception as e:
+        print(e)
+        pool.terminate()
+        pool.join()
+        exit()
+
+    '''
     count = 0
     totalcount = len(fileslist)
-    for path, name in fileslist:
+    for path in fileslist:
         if count % 100 == 0:
             sys.stdout.write('\r' + "Local processing:" + str(count) + "/" + str(totalcount))
             sys.stdout.flush()
@@ -32,6 +49,7 @@ def getTripsFromRegressionServer(path):
             sys.stdout.flush()
 
     print()
+    '''
     result.sort_values(['driver_id', 'start_time'], inplace=True)
     return result
 

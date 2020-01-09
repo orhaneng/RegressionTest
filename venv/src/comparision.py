@@ -42,9 +42,8 @@ def compareTrips(path, poolsize, version, regressionType, threadsize):
             path + "tripresults/maintripresult/" + poolsize), checkfolder(path + "tripresults/" + poolsize),
             str(datetime.datetime.now())]})
     versions.to_excel(writer, sheet_name='Summary', startrow=1, startcol=1)
-    print("started json")
+    print("comparing JSONs to get identical match report")
     writer = JSONcomparision(path, poolsize, writer, regressionType, threadsize)
-    print("ended json")
     compare.report(writer, sys.maxsize)
     driverScoreComparision(writer, df1, df2)
     writer.save()
@@ -108,7 +107,7 @@ def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
     result = pd.DataFrame(columns=["s3_key", "isIdentical", "comparision"])
     isallfilesidentical = True
 
-    pool = Pool(2)
+    pool = Pool(threadsize)
     try:
         with pool as p:
             print("Pool-size:", len(filelist))
@@ -128,5 +127,5 @@ def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
     head = pd.DataFrame(columns=["All trips are " + ("identical" if not isallfilesidentical else "not identical")])
     head.to_excel(writer, sheet_name='JSON Comparision', startrow=1, startcol=1)
     result.to_excel(writer, sheet_name='JSON Comparision', startrow=2, startcol=1)
-    print("Files are ", "identical" if isallfilesidentical else "not identical")
+    print("Files are ", "identical" if not isallfilesidentical else "not identical")
     return writer
