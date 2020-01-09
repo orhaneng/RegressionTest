@@ -2,7 +2,7 @@ from src.datacompy.core import *
 from src.jsoncomparision import checktwoJSONfiles
 from multiprocessing import Pool
 import tqdm
-
+import os.path
 import pandas as pd
 import xlsxwriter
 import sys
@@ -91,8 +91,8 @@ def driverScoreComparision(writer, df1, df2):
 def multi_run_wrapper(args):
     return checktwoJSONfiles(*args)
 
+
 def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
-    import pandas as pd
     rootpath = path + "jsonfiles/" + regressionType.value + "/"
 
     filelist = []
@@ -100,10 +100,16 @@ def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
     for root, dirs, files in os.walk(rootpath + str(JSONfilenameEnum.file.value) + "/" + str(poolsize) + "/"):
         for name in files:
             path = os.path.join(root, name)
-
             if path.endswith('.json'):
                 driver_id = path.split('/')[-2]
-                filelist.append([path, basepath + driver_id + "/" + name, name])
+                if os.path.isfile(path) and os.path.isfile(basepath + driver_id + "/" + name):
+                    filelist.append([path, basepath + driver_id + "/" + name, name])
+                else:
+                    print("missing json files detected.")
+                    if not os.path.isfile(path):
+                        print(path)
+                    if not os.path.isfile(basepath + driver_id + "/" + name):
+                        print(basepath + driver_id + "/" + name)
     result = pd.DataFrame(columns=["s3_key", "isIdentical", "comparision"])
     isallfilesidentical = True
 

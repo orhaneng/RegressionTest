@@ -2,6 +2,7 @@ from src.telematicsmultiprocess import uploadTripFilesandProcess
 from src.get_trip_from_regression_json import getTripsFromRegressionServer
 from src.comparision import compareTrips
 from src.comparision import checkfolder
+from src.changejsonfilename import changefilenames
 from enum import Enum
 from src.Enums import *
 from src.versioningfiles import VersionFile
@@ -103,7 +104,7 @@ def gettinginputs():
             jsonfilenameEnum = JSONfilenameEnum.base
 
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest or RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
-            threadsize = 8
+            threadsize = 2
         else:
             threadsize = 2
 
@@ -180,20 +181,15 @@ def startregressiontest():
         "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
     print("reading trips from JSON files")
     trip_results = getTripsFromRegressionServer(
-        FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value, threadsize)
+        FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value,
+        threadsize)
 
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 
-    #trip_id is coming random from telematics server. That's why, filenames are being changed by s3_key. It is the only primary paramater.
+    # trip_id is coming random from telematics server. That's why, filenames are being changed by s3_key. It is the only primary paramater.
+    print("setting s3_key to filename")
     if regressionType == RegressionTypeEnum.MentorBusiness:
-        for index, row in combinedresult_s3key.iterrows():
-            filename = "trip." + row["driver_id"] + "." + row["trip_id"] + ".json"
-
-            rootpath = FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value + "/" + \
-                       row["driver_id"] + "/"
-            os.system(
-                "mv " + rootpath + filename + " " + rootpath + row["s3_key"] + ".json"
-            )
+        changefilenames(combinedresult_s3key, regressionType, jsonfilenameEnum, poolsize, FOLDER_PATH, threadsize)
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")

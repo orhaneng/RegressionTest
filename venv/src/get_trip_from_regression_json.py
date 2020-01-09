@@ -26,30 +26,17 @@ def getTripsFromRegressionServer(path, threadsize):
         with pool as p:
             print("Pool-size:", len(filelist))
             comparisonresult = list(tqdm.tqdm(p.imap(multi_run_wrapper, filelist), total=len(filelist)))
+            print("loop started")
             for item in comparisonresult:
                 result = result.append(item)
+            print("loop ended")
+
 
     except Exception as e:
         print(e)
         pool.terminate()
         pool.join()
         exit()
-
-    '''
-    count = 0
-    totalcount = len(fileslist)
-    for path in fileslist:
-        if count % 100 == 0:
-            sys.stdout.write('\r' + "Local processing:" + str(count) + "/" + str(totalcount))
-            sys.stdout.flush()
-        result = result.append(processJSONFile(path))
-        count = count + 1
-        if count == len(fileslist):
-            sys.stdout.write('\r' + "Local processing:" + str(totalcount) + "/" + str(totalcount))
-            sys.stdout.flush()
-
-    print()
-    '''
     result.sort_values(['driver_id', 'start_time'], inplace=True)
     return result
 

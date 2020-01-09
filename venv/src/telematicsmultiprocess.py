@@ -49,7 +49,7 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
                             driver_id_set[idx], "", sessionid, idx, 0, regressionProcessType,
                             regressiontype)))
 
-    print("Processing trips...")
+    print("Processing trips...threadsize:", threadCount)
     pool = Pool(threadCount)
     try:
         with pool as p:

@@ -2,7 +2,9 @@ from jsondiff import diff
 from src.Enums import *
 import json
 import os
-
+from multiprocessing import Pool
+import tqdm
+import pandas as pd
 
 def remove_keys(obj, rubbish):
     if isinstance(obj, dict):
@@ -23,20 +25,74 @@ def cleanJSON(text):
     dict = remove_keys(dict, "tripId")
     dict = remove_keys(dict, "eventId")
     # TODO true/false outputs cause a problem. fix and remove them later
-    dict = remove_keys(dict, "isDriver")
-    dict = remove_keys(dict, "isPersonal")
-    dict = remove_keys(dict, "isDisputed")
+    #dict = remove_keys(dict, "isDriver")
+    #dict = remove_keys(dict, "isPersonal")
+    #dict = remove_keys(dict, "isDisputed")
     text = str(dict).replace("\'", "\"")
     return text
 
 
 def checktwoJSONfiles(file1, file2, name):
     with open(file1, encoding='utf-8') as f:
-        trip_json1 = json.loads(cleanJSON(f.read()))
+        trip_json1 = json.dumps(cleanJSON(f.read()))
 
     with open(file2, encoding='utf-8') as f:
-        trip_json2 = json.loads(cleanJSON(f.read()))
+        trip_json2 = json.dumps(cleanJSON(f.read()))
 
     return [diff(trip_json1, trip_json2), name]
+
+
 # JSONcomparision("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/", PoolSize.POOL_1000, None,
 #                RegressionTypeEnum.MentorBusiness)
+
+def multi_run_wrapper(args):
+    return checktwoJSONfiles(*args)
+
+
+def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
+    rootpath = path + "jsonfiles/" + regressionType.value + "/"
+
+    filelist = []
+    basepath = rootpath + str(JSONfilenameEnum.base.value) + "/" + str(poolsize) + "/"
+    for root, dirs, files in os.walk(rootpath + str(JSONfilenameEnum.file.value) + "/" + str(poolsize) + "/"):
+        for name in files:
+            path = os.path.join(root, name)
+            if path.endswith('.json'):
+                driver_id = path.split('/')[-2]
+                if os.path.isfile(path) and os.path.isfile(basepath + driver_id + "/" + name):
+                    filelist.append([path, basepath + driver_id + "/" + name, name])
+                else:
+                    print("missing json files detected.")
+                    if not os.path.isfile(path):
+                        print(path)
+                    if not os.path.isfile(basepath + driver_id + "/" + name):
+                        print(basepath + driver_id + "/" + name)
+    result = pd.DataFrame(columns=["s3_key", "isIdentical", "comparision"])
+    isallfilesidentical = True
+
+    pool = Pool(threadsize)
+    try:
+        with pool as p:
+            print("Pool-size:", len(filelist))
+            comparisonresult = list(tqdm.tqdm(p.imap(multi_run_wrapper, filelist), total=len(filelist)))
+            for item in comparisonresult:
+                if not bool(item[0]):
+                    isallfilesidentical = False
+                new_row = {'s3_key': item[1], 'isIdentical': not bool(item[0]), "comparision": item[0]}
+                result = result.append(new_row, ignore_index=True)
+
+    except Exception as e:
+        print(e)
+        pool.terminate()
+        pool.join()
+        exit()
+
+    head = pd.DataFrame(columns=["All trips are " + ("identical" if not isallfilesidentical else "not identical")])
+    #head.to_excel(writer, sheet_name='JSON Comparision', startrow=1, startcol=1)
+    #result.to_excel(writer, sheet_name='JSON Comparision', startrow=2, startcol=1)
+    print("Files are ", "identical" if not isallfilesidentical else "not identical")
+    return writer
+
+
+#JSONcomparision("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/", 1000, None,
+#                RegressionTypeEnum.MentorBusiness,5 )
