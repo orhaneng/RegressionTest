@@ -23,3 +23,7 @@ class PoolSize(Enum):
 class JSONfilenameEnum(Enum):
     base = "basefiles"
     file = "files"
+
+class IdenticalJSONReportEnum(Enum):
+    Yes="Y"
+    No="N"

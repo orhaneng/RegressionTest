@@ -54,8 +54,7 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
     try:
         with pool as p:
             print("Pool-size:", len(input))
-            result = list(tqdm.tqdm(p.imap(multi_run_wrapper, input), total=len(input)))
-            [log.append(item) for item in result]
+            log = list(tqdm.tqdm(p.imap(multi_run_wrapper, input), total=len(input)))
 
     except Exception as e:
         print(e)

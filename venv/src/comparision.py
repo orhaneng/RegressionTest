@@ -13,7 +13,7 @@ import datetime
 from src.Enums import *
 
 
-def compareTrips(path, poolsize, version, regressionType, threadsize):
+def compareTrips(path, poolsize, version, regressionType, threadsize, identicaljsonreport):
     VersionFile(path + "reports/" + poolsize + "/", ".xlsx")
 
     filepath = path + "reports/" + poolsize + "/regression_report" + version + ".xlsx"
@@ -42,8 +42,9 @@ def compareTrips(path, poolsize, version, regressionType, threadsize):
             path + "tripresults/maintripresult/" + poolsize), checkfolder(path + "tripresults/" + poolsize),
             str(datetime.datetime.now())]})
     versions.to_excel(writer, sheet_name='Summary', startrow=1, startcol=1)
-    print("comparing JSONs to get identical match report")
-    writer = JSONcomparision(path, poolsize, writer, regressionType, threadsize)
+    if identicaljsonreport == IdenticalJSONReportEnum.Yes:
+        print("comparing JSONs to get identical match report")
+        writer = JSONcomparision(path, poolsize, writer, regressionType, threadsize)
     compare.report(writer, sys.maxsize)
     driverScoreComparision(writer, df1, df2)
     writer.save()

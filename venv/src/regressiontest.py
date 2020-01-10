@@ -100,11 +100,12 @@ def gettinginputs():
 
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest:
             jsonfilenameEnum = JSONfilenameEnum.file
+            identicalJSONReport = IdenticalJSONReportEnum(input("Do you need an identical JSON comparision report? (Y/N) :").upper())
         else:
             jsonfilenameEnum = JSONfilenameEnum.base
 
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest or RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
-            threadsize = 2
+            threadsize = 10
         else:
             threadsize = 2
 
@@ -118,7 +119,7 @@ def gettinginputs():
     except ValueError:
         print("The selection is not valid!")
         exit()
-    return regressionProcessType, poolsize, regressionType, jsonfilenameEnum, threadsize
+    return regressionProcessType, poolsize, regressionType, jsonfilenameEnum, threadsize, identicalJSONReport
 
 
 def controlfolderfileprocess(regressionProcessType, regressionType):
@@ -146,7 +147,7 @@ def startregressiontest():
     print("Starting Time:" + str(currentDT))
     print("Be sure to put your new telematics folder in /home/ec2-user/regressiontest/build !!")
 
-    regressionProcessType, poolsize, regressionType, jsonfilenameEnum, threadsize = gettinginputs()
+    regressionProcessType, poolsize, regressionType, jsonfilenameEnum, threadsize, identicalJSONReport = gettinginputs()
 
     # checkDynamoDBProcess()
 
@@ -202,7 +203,7 @@ def startregressiontest():
         combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
         combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv",
                                     index=False)
-        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType, threadsize)
+        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType, threadsize, identicalJSONReport)
         print("Report is ready! Check reports folder!")
         print(comparisionpath)
 

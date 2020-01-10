@@ -16,27 +16,42 @@ def multi_run_wrapper(args):
 def getTripsFromRegressionServer(path, threadsize):
     result = pd.DataFrame()
     filelist = []
+    results= []
     for root, dirs, files in os.walk(path):
         for name in files:
             path = os.path.join(root, name)
             if path.endswith('.json'):
                 filelist.append([path])
     pool = Pool(threadsize)
+
     try:
         with pool as p:
             print("Pool-size:", len(filelist))
             comparisonresult = list(tqdm.tqdm(p.imap(multi_run_wrapper, filelist), total=len(filelist)))
-            print("loop started")
-            for item in comparisonresult:
-                result = result.append(item)
-            print("loop ended")
-
+            #[results.append(item) for item in comparisonresult]
+            #for item in comparisonresult:
+            #    result.append(item)
 
     except Exception as e:
         print(e)
         pool.terminate()
         pool.join()
         exit()
+    result = pd.DataFrame(comparisonresult)
+    result.columns = ["trip_id", "driver_id", "start_time", "score",
+                                   "stop_count", "stop_duration",
+                                   "start_count", "start_duration", "smooth_stop_count",
+                                   "smooth_stop_duration", "smooth_accel_count",
+                                   "smooth_accel_duration", "right_turn_count", "right_turn_duration",
+                                   "left_turn_count", "left_turn_duration", "smooth_right_turn_count",
+                                   "smooth_right_turn_duration", "smooth_left_turn_count",
+                                   "smooth_left_turn_duration", "hard_acceleration_count",
+                                   "hard_acceleration_duration", "hard_braking_count",
+                                   "hard_braking_duration", "hard_cornering_count",
+                                   "hard_cornering_duration", "call_in_count",
+                                   "call_in_duration", "call_out_count", "call_out_duration",
+                                   "phone_manipulation_count", "phone_manipulation_duration",
+                                   "displayed_speeding_count", "displayed_speeding_duration"]
     result.sort_values(['driver_id', 'start_time'], inplace=True)
     return result
 
@@ -87,20 +102,7 @@ def processJSONFile(file):
                         "CALL_INCOMING", "CALL_OUTGOING", "PHONE_MANIPULATION",
                         "SPEEDING"]
 
-    result = pd.DataFrame(columns=["trip_id", "driver_id", "start_time", "score",
-                                   "stop_count", "stop_duration",
-                                   "start_count", "start_duration", "smooth_stop_count",
-                                   "smooth_stop_duration", "smooth_accel_count",
-                                   "smooth_accel_duration", "right_turn_count", "right_turn_duration",
-                                   "left_turn_count", "left_turn_duration", "smooth_right_turn_count",
-                                   "smooth_right_turn_duration", "smooth_left_turn_count",
-                                   "smooth_left_turn_duration", "hard_acceleration_count",
-                                   "hard_acceleration_duration", "hard_braking_count",
-                                   "hard_braking_duration", "hard_cornering_count",
-                                   "hard_cornering_duration", "call_in_count",
-                                   "call_in_duration", "call_out_count", "call_out_duration",
-                                   "phone_manipulation_count", "phone_manipulation_duration",
-                                   "displayed_speeding_count", "displayed_speeding_duration"])
+
 
     result_index = 0
     for index in list(trips.index):
@@ -119,6 +121,4 @@ def processJSONFile(file):
             else:
                 row.append(0)
                 row.append(0)
-        result.loc[result_index] = row
-        result_index += 1
-    return result
+    return row
