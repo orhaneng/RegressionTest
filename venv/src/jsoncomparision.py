@@ -5,6 +5,8 @@ import os
 from multiprocessing import Pool
 import tqdm
 import pandas as pd
+import sys
+sys.setrecursionlimit(2000)
 
 def remove_keys(obj, rubbish):
     if isinstance(obj, dict):
@@ -33,6 +35,7 @@ def cleanJSON(text):
 
 
 def checktwoJSONfiles(file1, file2, name):
+    print(file1)
     with open(file1, encoding='utf-8') as f:
         trip_json1 = json.loads(cleanJSON(f.read()))
 
@@ -40,10 +43,6 @@ def checktwoJSONfiles(file1, file2, name):
         trip_json2 = json.loads(cleanJSON(f.read()))
 
     return [diff(trip_json1, trip_json2), name]
-
-
-# JSONcomparision("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/", PoolSize.POOL_1000, None,
-#                RegressionTypeEnum.MentorBusiness)
 
 def multi_run_wrapper(args):
     return checktwoJSONfiles(*args)
