@@ -120,7 +120,7 @@ def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
             print("Pool-size:", len(filelist))
             comparisonresult = list(tqdm.tqdm(p.imap(multi_run_wrapper, filelist), total=len(filelist)))
             for item in comparisonresult:
-                if not bool(item[0]):
+                if bool(item[0]):
                     isallfilesidentical = False
                 new_row = {'s3_key': item[1], 'isIdentical': not bool(item[0]), "comparision": item[0]}
                 result = result.append(new_row, ignore_index=True)
@@ -131,8 +131,8 @@ def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
         pool.join()
         exit()
 
-    head = pd.DataFrame(columns=["All trips are " + ("identical" if not isallfilesidentical else "not identical")])
+    head = pd.DataFrame(columns=["All trips are " + ("identical" if isallfilesidentical else "not identical")])
     head.to_excel(writer, sheet_name='JSON Comparision', startrow=1, startcol=1)
     result.to_excel(writer, sheet_name='JSON Comparision', startrow=2, startcol=1)
-    print("Files are ", "identical" if not isallfilesidentical else "not identical")
+    print("Files are ", "identical" if isallfilesidentical else "not identical")
     return writer

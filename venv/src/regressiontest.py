@@ -98,6 +98,7 @@ def gettinginputs():
             "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
         regressionProcessType = RegressionProcessTypeEnum(input("Selection:"))
 
+        identicalJSONReport = None
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest:
             jsonfilenameEnum = JSONfilenameEnum.file
             identicalJSONReport = IdenticalJSONReportEnum(input("Do you need an identical JSON comparision report? (Y/N) :").upper())
