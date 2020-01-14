@@ -35,7 +35,7 @@ def cleanJSON(text):
 
 
 def checktwoJSONfiles(file1, file2, name):
-    print(file1)
+
     with open(file1, encoding='utf-8') as f:
         trip_json1 = json.loads(cleanJSON(f.read()))
 
