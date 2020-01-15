@@ -24,6 +24,7 @@ def remove_keys(obj, rubbish):
 def cleanJSON(text):
     text = text.replace(": true", ": 'true'")
     text = text.replace(": false", ": 'false'")
+    text = text.replace("u0027", " ")
     import yaml
     dict = yaml.load(text, Loader=yaml.FullLoader)
     dict = remove_keys(dict, "tripId")
