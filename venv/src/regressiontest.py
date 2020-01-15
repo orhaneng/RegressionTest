@@ -205,7 +205,7 @@ def startregressiontest():
         combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv",
                                     index=False)
         comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType, threadsize, identicalJSONReport)
-        print("Report is ready! Check reports folder!")
+        print("Your report is ready! Check the reports folder!")
         print(comparisionpath)
 
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh stop")

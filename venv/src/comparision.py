@@ -43,7 +43,7 @@ def compareTrips(path, poolsize, version, regressionType, threadsize, identicalj
             str(datetime.datetime.now())]})
     versions.to_excel(writer, sheet_name='Summary', startrow=1, startcol=1)
     if identicaljsonreport == IdenticalJSONReportEnum.Yes:
-        print("comparing JSONs to get identical match report")
+        print("comparing JSONs to get an identical match report")
         writer = JSONcomparision(path, poolsize, writer, regressionType, threadsize)
     compare.report(writer, sys.maxsize)
     driverScoreComparision(writer, df1, df2)
