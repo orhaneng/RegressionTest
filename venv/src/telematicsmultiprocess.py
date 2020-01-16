@@ -100,7 +100,9 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
     if response.status_code == 200:
         response_json = json.loads(response.content)
         log_row.append(str(response_json.get('tripId')))
-
-    log_row.append(file_name)
+        if regressiontype == RegressionTypeEnum.MentorBusiness:
+            log_row.append(file_name)
+        else:
+            log_row.append(str(response_json.get('tripId')))
 
     return log_row
