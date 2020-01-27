@@ -90,12 +90,13 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
     #if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
     #    print("unsaved mapping data " + response_json.get('reasonDetail'))
     #    raise Exception("unsaved mapping data")
+    #if response.status_code == 400 and 'bad GPS Records' in str(response.content):
+    #    print('bad gps data-'+"driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
+    #        response.status_code) + "-filename:" + file_name + " reason:" + str(response.content))
     if response.status_code != 200 and response.status_code != 400:
         print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
             response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
-    if response.status_code == 400 and 'bad gps data' in str(response.content):
-        print('bad gps data-'+"driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
-            response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
+
     log_row = []
     if response.status_code == 200:
         response_json = json.loads(response.content)
