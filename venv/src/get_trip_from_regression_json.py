@@ -68,7 +68,7 @@ def processJSONFile(file):
         trip_events[trip_id] = {}
     event_dict = {}  # trip_events.get(trip_id)
 
-    if trip_json["events"] != None:
+    if "events" in trip_json and trip_json["events"] != None:
         for event in trip_json["events"]:
             e_name = event["eventType"]
 
