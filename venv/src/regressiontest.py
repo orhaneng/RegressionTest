@@ -105,7 +105,7 @@ def gettinginputs():
         else:
             jsonfilenameEnum = JSONfilenameEnum.base
 
-        if regressionProcessType == RegressionProcessTypeEnum.RegressionTest or RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
+        if regressionProcessType == RegressionProcessTypeEnum.RegressionTest or regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
             threadsize = 10
         else:
             threadsize = 2
