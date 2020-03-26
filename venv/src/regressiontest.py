@@ -2,6 +2,7 @@ from src.telematicsmultiprocess import uploadTripFilesandProcess
 from src.get_trip_from_regression_json import getTripsFromRegressionServer
 from src.comparision import compareTrips
 from src.comparision import checkfolder
+from src.tlm112 import startProcessFiles
 from src.changejsonfilename import changefilenames
 from enum import Enum
 from src.Enums import *
@@ -84,18 +85,29 @@ def checkDynamoDBProcess():
 def gettinginputs():
     try:
         print(
-            "Select your type.. (1-Mentor Business 2-Non-Armada)")
+            "Select your type.. (1-Mentor Business 2-Non-Armada 3-GEOTAB 4-TLM-112)")
         selectionregressiontype = input("Selection:")
         if selectionregressiontype == "1":
             regressionType = RegressionTypeEnum.MentorBusiness
         elif selectionregressiontype == "2":
             regressionType = RegressionTypeEnum.NonArmada
+        elif selectionregressiontype == '3':
+            regressionType = RegressionTypeEnum.GEOTAB
+        elif selectionregressiontype == '4':
+            regressionType = RegressionTypeEnum.TLM112
         else:
             print("The selection is not valid!")
             exit()
 
-        print(
-            "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
+        if regressionType == RegressionTypeEnum.TLM112:
+            startProcessFiles()
+            exit()
+        if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.NonArmada:
+            print(
+                "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
+        elif regressionType == RegressionTypeEnum.GEOTAB:
+            print(
+                "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults)")
         regressionProcessType = RegressionProcessTypeEnum(input("Selection:"))
 
         identicalJSONReport = None
@@ -106,15 +118,17 @@ def gettinginputs():
             jsonfilenameEnum = JSONfilenameEnum.base
 
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest or regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
-            threadsize = 10
+            threadsize = 1
         else:
-            threadsize = 2
+            threadsize = 1
 
         if regressionType == RegressionTypeEnum.MentorBusiness:
             print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
             poolsize = PoolSize(input("Selection:"))
-        else:
+        elif regressionType == RegressionTypeEnum.NonArmada:
             poolsize = PoolSize.POOL_NONARMADA
+        elif regressionType == RegressionTypeEnum.GEOTAB:
+            poolsize = PoolSize.POOL_GEOTAB
 
 
     except ValueError:
