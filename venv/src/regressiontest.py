@@ -203,7 +203,7 @@ def startregressiontest():
     combinedresult_s3key = pd.merge(log_dataframe, trip_results, on='trip_id')
 
     # trip_id is coming random from telematics server. That's why, filenames are being changed by s3_key. It is the only primary paramater.
-    if regressionType == RegressionTypeEnum.MentorBusiness:
+    if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.GEOTAB:
         print("setting s3_key to filename")
         changefilenames(combinedresult_s3key, regressionType, jsonfilenameEnum, poolsize, FOLDER_PATH, threadsize)
 

@@ -41,6 +41,11 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
                                    regressionProcessType, regressiontype)))
                     elif regressiontype == RegressionTypeEnum.NonArmada:
                         sessionidlist.append(file_names[idx][jdx].split('_')[0])
+                if file_names[idx][jdx].endswith('.json'):
+                    if regressiontype == RegressionTypeEnum.GEOTAB:
+                        input.append(
+                            tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx,
+                                   regressionProcessType, regressiontype)))
             if regressiontype == RegressionTypeEnum.NonArmada:
                 sessionidlist = list(set(sessionidlist))
                 for sessionid in sessionidlist:
@@ -63,7 +68,7 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
         exit()
 
     log_dataframe = pd.DataFrame(log)
-    if len(log) <2:
+    if len(log) < 2:
         print("no data")
         exit()
     log_dataframe.columns = ['trip_id', 's3_key']
@@ -86,11 +91,17 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
         upload_url = server_url + str(driver_id) + '/trips/' + file_name
         headers = {'Content-Type': 'application/json'}
         response = requests.post(upload_url, data=timestamp, headers=headers)
+    elif regressiontype == RegressionTypeEnum.GEOTAB:
+        server_url = 'http://localhost:8080/api/v2/drivers'
+        headers = {'Content-type': 'application/json'}
+        file_dir = batch_file_dir + driver_id + '/' + file_name
+        upload_url = server_url + '/' + driver_id + '/trips'
+        response = requests.post(upload_url, data=open(file_dir, 'rb'), headers=headers)
     response_json = None
-    #if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
+    # if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
     #    print("unsaved mapping data " + response_json.get('reasonDetail'))
     #    raise Exception("unsaved mapping data")
-    #if response.status_code == 400 and 'bad GPS Records' in str(response.content):
+    # if response.status_code == 400 and 'bad GPS Records' in str(response.content):
     #    print('bad gps data-'+"driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
     #        response.status_code) + "-filename:" + file_name + " reason:" + str(response.content))
     if response.status_code != 200 and response.status_code != 400:
@@ -101,7 +112,7 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
     if response.status_code == 200:
         response_json = json.loads(response.content)
         log_row.append(str(response_json.get('tripId')))
-        if regressiontype == RegressionTypeEnum.MentorBusiness:
+        if regressiontype == RegressionTypeEnum.MentorBusiness or regressiontype == RegressionTypeEnum.GEOTAB:
             log_row.append(file_name)
         else:
             log_row.append(str(response_json.get('tripId')))
