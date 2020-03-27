@@ -700,7 +700,11 @@ class Compare(object):
         score.sort(reverse=True)
         fit = stats.norm.pdf(score, np.mean(score), np.std(score))  # this is a fitting indeed
         pl.plot(score, fit, '-o')
-        pl.hist(score, density=True, edgecolor='black', bins=int(180 / 5))  # use this to draw histogram of your data
+        list = []
+        for x in range(0, 850):
+            if x % 10 == 0:
+                list.append(x)
+        pl.hist(score, density=True, edgecolor='black', bins=list)  # use this to draw histogram of your data
         pl.title("Score Density Chart")
         plt.savefig(os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png", dpi=150)
         worksheet = writer.sheets['Graphs']
@@ -708,15 +712,19 @@ class Compare(object):
         plt.close()
 
     def createTripScoreDensityChart(self, writer):
+        list= []
+        for x in range(0, 850):
+            if x % 10 == 0:
+                list.append(x)
         plt.subplot(2, 1, 1)
         plt.hist(self.df1['score'], color='blue', edgecolor='black',
-                 bins=int(180 / 5))
+                 bins=list)
         plt.title('Histogram of Trip Counts(Old)/Score')
         plt.xlabel('Score')
         plt.ylabel('Trip Counts')
         plt.subplot(2, 1, 2)
         plt.hist(self.df2['score'], color='blue', edgecolor='black',
-                 bins=int(180 / 5))
+                 bins=list)
         plt.title('Histogram of Trip Counts(New)/Score')
         plt.xlabel('Score')
         plt.ylabel('Trip Counts')
@@ -728,6 +736,10 @@ class Compare(object):
 
     def createDriverScoreDensityChart(self, writer):
 
+        list =[]
+        for x in range(0, 850):
+            if x % 10 == 0:
+                list.append(x)
         df1score = self.df1.copy(deep=True)
         df1score.loc[df1score['score'] == 'None', 'score'] = 0
         df1score['score'] = df1score['score'].astype(int)
@@ -740,13 +752,13 @@ class Compare(object):
         new_score.columns = ["driver_id", "new_score"]
         plt.subplot(2, 1, 1)
         plt.hist(old_score['old_score'], color='orange', edgecolor='black',
-                 bins=int(180 / 5))
+                 bins=list)
         plt.title('Histogram of Driver Counts(Old)/Avg Score')
         plt.xlabel('Avg Score')
         plt.ylabel('Driver Count')
         plt.subplot(2, 1, 2)
         plt.hist(new_score['new_score'], color='orange', edgecolor='black',
-                 bins=int(180 / 5))
+                 bins=list)
         plt.title('Histogram of Driver Counts(New)/Avg Score')
         plt.xlabel('Avg Score')
         plt.ylabel('Driver Count')
