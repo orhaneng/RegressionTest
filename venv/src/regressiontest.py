@@ -85,7 +85,7 @@ def checkDynamoDBProcess():
 def gettinginputs():
     try:
         print(
-            "Select your type.. (1-Mentor Business 2-Non-Armada 3-GEOTAB 4-TLM-112)")
+            "Select your type.. (1-Mentor Business 2-Non-Armada 3-GEOTAB 4-TLM-112 non-geotab 5-TLM-112 GEOTAB)")
         selectionregressiontype = input("Selection:")
         if selectionregressiontype == "1":
             regressionType = RegressionTypeEnum.MentorBusiness
@@ -94,12 +94,12 @@ def gettinginputs():
         elif selectionregressiontype == '3':
             regressionType = RegressionTypeEnum.GEOTAB
         elif selectionregressiontype == '4':
-            regressionType = RegressionTypeEnum.TLM112
+            regressionType = RegressionTypeEnum.TLM112NONEGEOTAB
         else:
             print("The selection is not valid!")
             exit()
 
-        if regressionType == RegressionTypeEnum.TLM112:
+        if regressionType == RegressionTypeEnum.TLM112NONEGEOTAB:
             startProcessFiles()
             exit()
         if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.NonArmada:

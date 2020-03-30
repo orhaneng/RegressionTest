@@ -16,7 +16,7 @@ import sys
 import signal
 import mysql.connector
 
-threadcount = 3
+threadcount = 1
 
 
 def multi_run_wrapper(args):
@@ -76,11 +76,9 @@ def connectAurora(query):
                                   host='prod-telematics-aurora-cluster.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
                                   database='telematics')
     cursor = cnx.cursor()
-    #result = []
     cursor.execute(query)
     df_result = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key'])
     for (driver_id, trip_id, s3key) in cursor:
-        #result.append([driver_id, trip_id, s3key])
         df_result = df_result.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key},
                                      ignore_index=True)
 
@@ -91,14 +89,14 @@ def connectAurora(query):
 
 def processCSVtoGetS3key(FOLDER_PATH):
     import mysql.connector
-    exampleList = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/data_week_11_17_to_11_23.csv",
+    exampleList = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/nongeotabtrips.csv",
                               index_col=False)
     result = "select driver_id, trip_id,s3_key from trip_file where "
     query = []
     count = 1
     listquery = []
     for i, row in exampleList.iterrows():
-        query.append("(driver_id = '" + str(row[0]) + "' and trip_id='" + str(row[1]) + "') or ")
+        query.append("(driver_id = '" + str(row[1]) + "' and trip_id='" + str(row[0]) + "') or ")
         if count == 3000:
             break
         if count % 1000 == 0 or count == len(exampleList):
@@ -119,13 +117,11 @@ def processCSVtoGetS3key(FOLDER_PATH):
         pool.join()
         exit()
 
-    df_result = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key'])
-
     mergedf = pd.concat(resultlist)
 
-    df_result.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/weekly_trips_final.csv", index=False)
+    mergedf.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/weekly_trips_final.csv", index=False)
 
-    processTrips(df_result, exampleList, FOLDER_PATH)
+    processTrips(mergedf, exampleList, FOLDER_PATH)
 
 
 def processTrips(df_result, exampleList, FOLDER_PATH):
@@ -155,7 +151,7 @@ def processTrips(df_result, exampleList, FOLDER_PATH):
         exampleList.loc[(exampleList['trip_id'] == item[1]) & (exampleList['driver_id'] == item[0]), ['STATUS']] = item[
             2]
 
-    exampleList.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/dataafterprocess.csv")
+    exampleList.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/dataafterprocess.csv")
 
 
 def processDriver(driver_id, regressiontype, session_id, FOLDER_PATH):

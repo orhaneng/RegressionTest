@@ -132,8 +132,8 @@ def connectAurora():
     print(result)
 
 
-#connectRedshift()
-#connectAurora()
+# connectRedshift()
+# connectAurora()
 
 
 def mergefiles():
@@ -177,18 +177,17 @@ def analysis():
 
 def analysisSample():
     finalall = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final.csv")
-    #print(len(finalall['device'].unique()))
+    # print(len(finalall['device'].unique()))
     finalall = finalall[finalall['source'] == 'MENTOR_NON_GEOTAB']
     print(len(finalall['device'].unique()))
     data = finalall.groupby('device').apply(lambda df: df.sample(1))
-    #data.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/samples.csv")
-    #print(data['device'])
-
+    # data.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/samples.csv")
+    # print(data['device'])
 
     nosensors = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/nosensors.csv")
     print(nosensors)
     list = []
-    for index , row in nosensors.iterrows():
+    for index, row in nosensors.iterrows():
         print(row[0])
         list.append(row[0])
 
@@ -197,9 +196,25 @@ def analysisSample():
     finalall.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/devices.csv")
     print(len(finalall['device'].unique()))
 
-#analysis()
 
-analysisSample()
+# analysis()
+
+# analysisSample()
+
+
+def tripresultsanalysis():
+    tripresult = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripresults/trip_results3.3.19.5_afterfix.csv")
+    tripresult = tripresult.groupby(['driver_id'])[
+              'displayed_speeding_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count','hard_cornering_count'].agg(
+        'sum')
+
+    driver_score = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripresults/driver_score.csv")
+    driverlist = pd.merge(driver_score,tripresult, on='driver_id')
+    print(driverlist)
+    driverlist.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripresults/driver_list.csv")
+
+tripresultsanalysis()
 '''
 select t.driver_id, t.local_date,t.source, t.trip_id,s.score, count(*) from trips t join trip_scores s on s.trip_id=t.trip_id  left join trip_events e on t.trip_id = e.trip_id  where 
  t.source in ('MENTOR_NON_GEOTAB', 'MENTOR_GEOTAB') and t.local_date >= '2019-11-04' and t.local_date < '2019-11-10' and t.status='SUCCESS' 

@@ -4,7 +4,8 @@ class RegressionTypeEnum(Enum):
     MentorBusiness = "mentorbusiness"
     NonArmada = "non-armada"
     GEOTAB = "geotab"
-    TLM112 = "tlm112"
+    TLM112NONEGEOTAB = "tlm112-non-geotab"
+    TLM112GEOTAB = 'tlm112-geotab'
 
 
 class RegressionProcessTypeEnum(Enum):
