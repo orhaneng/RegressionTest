@@ -285,13 +285,13 @@ and source = 'MENTOR' group by driver_id order by tripcount desc)
 
 select driver_id from (
 select driver_id, DATE(local_date),count(*) from trips
-where local_date >= '2019-08-01' and 
-local_date < '2019-09-01'
+where local_date >= '2020-01-01' and 
+local_date < '2020-04-01'
 and mode = 'CAR'
 and status = 'SUCCESS'
 and is_driver = true
 and is_personal = false
-and source = 'MENTOR'
+and source = 'MENTOR_NON_GEOTAB'
 group by driver_id, DATE(local_date) having count(*) >=5) data 
 group by driver_id having count(*)>=15 order by RANDOM()  limit 600
 

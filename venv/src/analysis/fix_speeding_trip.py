@@ -2,14 +2,14 @@
 
 import sys
 import json
-
+import pandas as pd
 
 def generate_speeding_breakdown(speeding_event, speeding_locations):
     result = {}
 
     speeding_locations.sort(key=lambda l: l['timestamp'])
 
-    if len(speeding_locations) > 2:
+    if len(speeding_locations) > 0:
         for (i, location) in enumerate(speeding_locations):
             if 'speedLimit' in location:
                 delta_speed = location['speed'] - location['speedLimit']
@@ -21,7 +21,7 @@ def generate_speeding_breakdown(speeding_event, speeding_locations):
                 delta_time = (next_timestamp - current_timestamp) / 1000.0
 
                 speeding_percentage = delta_speed * 100 / location['speedLimit']
-                base_percentage = int(speeding_percentage) / 5
+                base_percentage = int(speeding_percentage / 5)
 
                 breakdown_key = str(location['speedLimit']) + "_" + str(base_percentage)
                 breakdown = result.get(breakdown_key)
@@ -68,7 +68,7 @@ def fixfile(inputfile, outputfile):
     with open(outputfile, 'w') as file:
         file.write(json.dumps(trip))  # use `json.loads` to do the reverse
 
-
+fixfile("/Users/omerorhan/Documents/EventDetection/regression_server/d-300099246---t-057956929500473b9a47dc3c6cf7004d.json", "/Users/omerorhan/Documents/EventDetection/regression_server/d-300099246---t-057956929500473b9a47dc3c6cf7004d2.json")
 def main():
     import os
     batch_file_dir = "/home/ec2-user/regressiontest/tripfiles/geotab/"
@@ -90,5 +90,6 @@ def main():
                 count = count +1
                 print(count)
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()
+

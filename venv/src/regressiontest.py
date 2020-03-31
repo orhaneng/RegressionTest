@@ -2,7 +2,8 @@ from src.telematicsmultiprocess import uploadTripFilesandProcess
 from src.get_trip_from_regression_json import getTripsFromRegressionServer
 from src.comparision import compareTrips
 from src.comparision import checkfolder
-from src.tlm112 import startProcessFiles
+from src.tlm112 import startProcessNonGeotabFiles
+from src.tlm112 import startProcessGeotabFiles
 from src.changejsonfilename import changefilenames
 from enum import Enum
 from src.Enums import *
@@ -95,12 +96,17 @@ def gettinginputs():
             regressionType = RegressionTypeEnum.GEOTAB
         elif selectionregressiontype == '4':
             regressionType = RegressionTypeEnum.TLM112NONEGEOTAB
+        elif selectionregressiontype == '5':
+            regressionType = RegressionTypeEnum.TLM112GEOTAB
         else:
             print("The selection is not valid!")
             exit()
 
         if regressionType == RegressionTypeEnum.TLM112NONEGEOTAB:
-            startProcessFiles()
+            startProcessNonGeotabFiles()
+            exit()
+        if regressionType == RegressionTypeEnum.TLM112GEOTAB:
+            startProcessGeotabFiles()
             exit()
         if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.NonArmada:
             print(
