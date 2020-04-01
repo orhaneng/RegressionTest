@@ -16,16 +16,20 @@ import sys
 import signal
 import mysql.connector
 
-threadcount = 4
+threadcount = 5
+
 
 def multi_run_wrapper(args):
     return copyFilesfromS3toRegressionServer(*args)
 
 
-def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source, FOLDER_PATH):
+def multi_run_wrapperAurora(args):
+    return connectAurora(*args)
 
+
+def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source, FOLDER_PATH):
     os.putenv('s3list', ' '.join(s3listbyTripId))
-    #os.putenv('path', FOLDER_PATH+'tripfiles/tlm112-geotab/rawfiles/$x')
+    # os.putenv('path', FOLDER_PATH+'tripfiles/tlm112-geotab/rawfiles/$x')
     subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
 
     if source == 'MENTOR_GEOTAB':
@@ -44,7 +48,8 @@ def processDriver(driver_id, regressiontype, trip_id, FOLDER_PATH):
     if regressiontype == RegressionTypeEnum.TLM112GEOTAB:
         server_url = 'http://localhost:8080/api/v2/drivers'
         headers = {'Content-type': 'application/json'}
-        file_dir = FOLDER_PATH+"tripfiles/tlm112-geotab/json/"+str(driver_id)+"/"+str(driver_id)+"-"+str(trip_id)+".json"
+        file_dir = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(driver_id) + "-" + str(
+            trip_id) + ".json"
         upload_url = server_url + '/' + str(driver_id) + '/trips'
         response = requests.post(upload_url, data=open(file_dir, 'rb'), headers=headers)
 
@@ -68,52 +73,74 @@ def processDriver(driver_id, regressiontype, trip_id, FOLDER_PATH):
     log_row = [driver_id, trip_id, response.status_code, count]
     return log_row
 
-def processgetstartendtimefromJSON(FOLDER_PATH):
+
+def connectAurora(driver_id, trip_id, FOLDER_PATH):
     cnx = mysql.connector.connect(user='omer', password='3$@Wed#f%g67dfg34%gH2s8',
                                   host='prod-telematics-aurora-cluster.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
                                   database='telematics')
 
-    listquery = []
-    exampleList = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/geotabtrips.csv",
-                              index_col=False, nrows=5)
-
     df_result = pd.DataFrame(
         columns=['driver_id', 'trip_id', 'file_name', 'expire_in_days', 'start_time', 'end_time', 's3_key',
                  'created_at', 'updated_at'])
-    count = len(exampleList)
-    for i, row in exampleList.iterrows():
-        JSONpath = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(row['driver_id']) + "/" + str(
-            row['driver_id']) + '-' + str(row['trip_id']) + '.json'
-        with open(JSONpath, 'r') as myfile:
-            trip = json.loads(myfile.read())
-            starttimestamp = trip['startTimestamp']
-            endtimestamp = trip['endTimestamp']
-            query = 'select * from telematics.trip_file where (start_time between ' + str(
-                starttimestamp) + ' and ' + str(endtimestamp) + ' and driver_id =' + str(
-                row['driver_id']) + ') or (end_time between ' + str(starttimestamp) + ' and ' + str(
-                endtimestamp) + ' and driver_id =' + str(row['driver_id']) + ')'
-            cursor = cnx.cursor()
-            cursor.execute(query)
 
-            for (driver_id, trip_id, file_name, expire_in_days, start_time, end_time, s3_key, created_at,
-                 updated_at) in cursor:
-                df_result = df_result.append(
-                    {'driver_id': row['driver_id'], 'trip_id': row['trip_id'], 'file_name': file_name,
-                     'expire_in_days': expire_in_days, 'start_time': str(start_time),
-                     'end_time': str(end_time), 's3_key': s3_key, 'created_at': created_at,
-                     'updated_at': updated_at},
-                    ignore_index=True)
-            print(count)
-            count = count - 1
+    JSONpath = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(driver_id) + '-' + str(
+        trip_id) + '.json'
+    with open(JSONpath, 'r') as myfile:
+        trip = json.loads(myfile.read())
+    starttimestamp = trip['startTimestamp']
+    endtimestamp = trip['endTimestamp']
+    query = 'select * from telematics.trip_file where (start_time between ' + str(
+        starttimestamp) + ' and ' + str(endtimestamp) + ' and driver_id =' + str(
+        driver_id) + ') or (end_time between ' + str(starttimestamp) + ' and ' + str(
+        endtimestamp) + ' and driver_id =' + str(driver_id) + ')'
+    cursor = cnx.cursor()
+    cursor.execute(query)
+    for (driver_id_db, trip_id_db, file_name, expire_in_days, start_time, end_time, s3_key, created_at,
+         updated_at) in cursor:
+        df_result = df_result.append(
+            {'driver_id': str(driver_id), 'trip_id': str(trip_id), 'file_name': file_name,
+             'expire_in_days': expire_in_days, 'start_time': str(start_time),
+             'end_time': str(end_time), 's3_key': s3_key, 'created_at': created_at,
+             'updated_at': updated_at},
+            ignore_index=True)
 
-
-    df_result.to_csv(
-        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/pmanalysis_tlm_112/geotab/telematics.csv", index=False)
-
-    df_result = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/pmanalysis_tlm_112/geotab/telematics.csv")
     cnx.close()
+    return df_result
 
-    processTrips(df_result, exampleList, FOLDER_PATH)
+
+def processgetstartendtimefromJSON(FOLDER_PATH):
+    exampleList = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/geotabtrips.csv",
+                              index_col=False, nrows=5)
+
+    count = len(exampleList)
+    listquery = []
+    for i, row in exampleList.iterrows():
+        listquery.append([row['driver_id'], row['trip_id'], FOLDER_PATH])
+
+    pool = Pool(threadcount)
+    try:
+        with pool as p:
+            print("Pool-size:", len(listquery))
+            resultlist = list(tqdm.tqdm(p.imap(multi_run_wrapperAurora, listquery), total=len(listquery)))
+
+
+    except Exception as e:
+        print(e)
+        pool.terminate()
+        pool.join()
+        exit()
+
+    mergedf = pd.concat(resultlist)
+
+    mergedf.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/pmanalysis_tlm_112/geotab/telematics.csv",
+        index=False)
+
+    # df_result = pd.read_csv(
+    #    "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/pmanalysis_tlm_112/geotab/telematics.csv")
+
+    processTrips(mergedf, exampleList, FOLDER_PATH)
+
 
 def processTrips(df_result, exampleList, FOLDER_PATH):
     threadjobs = []
@@ -143,6 +170,3 @@ def processTrips(df_result, exampleList, FOLDER_PATH):
             2]
 
     exampleList.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/dataafterprocess.csv")
-
-
-
