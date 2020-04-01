@@ -41,8 +41,8 @@ def processCSVtoGetS3key():
     query = []
     for i, row in exampleList.iterrows():
         query.append("(driver_id = '" + str(row[1]) + "' and trip_id='" + str(row[0]) + "') or ")
-        #if i > 1000:
-            #print(i)
+        # if i > 1000:
+        # print(i)
     cursor.execute(result + "".join(query)[:-3])
     for (driver_id, trip_id, s3key) in cursor:
         df_result = df_result.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key},
@@ -54,7 +54,7 @@ def processCSVtoGetS3key():
     cnx.close()
 
 
-processCSVtoGetS3key()
+# processCSVtoGetS3key()
 def divideDriversIntoPools():
     # PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
     PATH = "/home/ec2-user/regressiontest/"
@@ -218,7 +218,25 @@ def getsessionidindriver():
         print(setsessionlist)
 
 
-#getsessionidindriver()
+# getsessionidindriver()
+
+def readfile():
+
+    filename = '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/backupconfigfolder/non-armada/config/data-service.properties'
+    d = {}
+    with open(filename) as f:
+        for line in f:
+            values = line.split('=')
+            if len(values) > 1:
+                key, value = line.split('=')
+                d[key] = value
+            if len(values) < 2:
+                value = line.split('=')
+                d[value] = ""
+
+
+readfile()
+
 '''
 
 300423983	300423983-4d77a24858f64b2cac872960742cb1e2	trip.300423983.1568992956162.bin_v2.gz	365	1568992956160	1568994090538	300423983/4d77a24858f64b2cac872960742cb1e2_trip.300423983.1568992956162.bin_v2.gz	2019-09-20 08:41:36.0	
@@ -321,5 +339,3 @@ local_date < '2020-04-01'
 
 
 '''
-
-

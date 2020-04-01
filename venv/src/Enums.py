@@ -20,7 +20,8 @@ class PoolSize(Enum):
     POOL_20000 = "20000"
     POOL_50000 = "50000"
     POOL_100000 = "100000"
-    POOL_NONARMADA="non-armada"
+    POOL_NONARMADA_1000="non-armada/1000"
+    POOL_NONARMADA_10000 = "non-armada/10000"
     POOL_GEOTAB = "geotab"
 
 

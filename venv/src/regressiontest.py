@@ -132,7 +132,15 @@ def gettinginputs():
             print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
             poolsize = PoolSize(input("Selection:"))
         elif regressionType == RegressionTypeEnum.NonArmada:
-            poolsize = PoolSize.POOL_NONARMADA
+            print("Type your pool-size. (Options:1000, 10000)")
+            pool = input("Selection:")
+            if pool == '1000':
+                poolsize = PoolSize.POOL_NONARMADA_1000
+            elif pool == '10000':
+                poolsize = PoolSize.POOL_NONARMADA_10000
+            else:
+                print("invalid input!")
+                exit()
         elif regressionType == RegressionTypeEnum.GEOTAB:
             poolsize = PoolSize.POOL_GEOTAB
 
@@ -143,7 +151,7 @@ def gettinginputs():
     return regressionProcessType, poolsize, regressionType, jsonfilenameEnum, threadsize, identicalJSONReport
 
 
-def controlfolderfileprocess(regressionProcessType, regressionType):
+def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
     if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
         FOLDER_PATH = "/home/ec2-user/regressiontest/"
     else:
@@ -155,11 +163,19 @@ def controlfolderfileprocess(regressionProcessType, regressionType):
 
     print("Copying config files!")
     if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-        os.system(
-            "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/" + regressionType.value + "/config " + FOLDER_PATH + "build/telematics-server/")
+        if regressionType == RegressionTypeEnum.NonArmada:
+            os.system(
+                "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/" + poolsize.value + "/config " + FOLDER_PATH + "build/telematics-server/")
+        else:
+            os.system(
+                "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/" + regressionType.value + "/config " + FOLDER_PATH + "build/telematics-server/")
     else:
-        os.system(
-            "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/" + regressionType.value + "/config " + FOLDER_PATH + "build/telematics-server/")
+        if regressionType == RegressionTypeEnum.NonArmada:
+            os.system(
+                "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/" + poolsize.value + "/config " + FOLDER_PATH + "build/telematics-server/")
+        else:
+            os.system(
+                "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/" + regressionType.value + "/config " + FOLDER_PATH + "build/telematics-server/")
     return FOLDER_PATH
 
 
@@ -174,7 +190,7 @@ def startregressiontest():
 
     print("Checking telematics folder in build folder...")
 
-    FOLDER_PATH = controlfolderfileprocess(regressionProcessType, regressionType)
+    FOLDER_PATH = controlfolderfileprocess(regressionProcessType, regressionType, poolsize)
 
     print("Killing old telematics processes if exits...")
     killoldtelematicsprocess()
