@@ -307,4 +307,19 @@ where p.type = 1 group by user_id having count(*) >=10
 order by rand() desc limit 1500) data)
 order by p.id desc);
 
+select distinct(trip_id), driver_id, local_date from trips where driver_id in (select driver_id from (
+select driver_id,count(*) from trips
+where local_date >= '2020-01-01' and 
+local_date < '2020-04-01'
+and mode = 'CAR'
+and status = 'SUCCESS'
+and is_driver = true
+and is_personal = false
+and source = 'MENTOR_NON_GEOTAB'
+group by driver_id having count(*) >=5 order by count desc limit 119)) and  local_date >= '2020-01-01' and 
+local_date < '2020-04-01'
+
+
 '''
+
+

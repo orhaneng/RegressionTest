@@ -16,10 +16,11 @@ import sys
 import signal
 import mysql.connector
 
-threadcount = 1
+threadcount = 4
 
 def multi_run_wrapper(args):
     return copyFilesfromS3toRegressionServer(*args)
+
 
 def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source, FOLDER_PATH):
 
@@ -64,7 +65,7 @@ def processDriver(driver_id, regressiontype, trip_id, FOLDER_PATH):
                 if eventitem['eventType'] == 'PHONE_MANIPULATION':
                     count = eventitem['count']
                     break
-    log_row = [driver_id, response_json['tripId'], response.status_code, count]
+    log_row = [driver_id, trip_id, response.status_code, count]
     return log_row
 
 def processgetstartendtimefromJSON(FOLDER_PATH):
@@ -80,7 +81,6 @@ def processgetstartendtimefromJSON(FOLDER_PATH):
         columns=['driver_id', 'trip_id', 'file_name', 'expire_in_days', 'start_time', 'end_time', 's3_key',
                  'created_at', 'updated_at'])
     count = len(exampleList)
-    '''
     for i, row in exampleList.iterrows():
         JSONpath = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(row['driver_id']) + "/" + str(
             row['driver_id']) + '-' + str(row['trip_id']) + '.json'
@@ -109,7 +109,6 @@ def processgetstartendtimefromJSON(FOLDER_PATH):
 
     df_result.to_csv(
         "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/pmanalysis_tlm_112/geotab/telematics.csv", index=False)
-    '''
 
     df_result = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/pmanalysis_tlm_112/geotab/telematics.csv")
     cnx.close()
@@ -143,7 +142,7 @@ def processTrips(df_result, exampleList, FOLDER_PATH):
         exampleList.loc[(exampleList['trip_id'] == item[1]) & (exampleList['driver_id'] == item[0]), ['STATUS']] = item[
             2]
 
-    exampleList.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/dataafterprocess.csv")
+    exampleList.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/dataafterprocess.csv")
 
 
 
