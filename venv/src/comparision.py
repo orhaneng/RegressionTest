@@ -85,7 +85,34 @@ def driverScoreComparision(writer, df1, df2):
                        axis='columns', keys=['Old', 'New'])
     df_final = df_all.swaplevel(axis='columns')[old_score.columns[1:]]
     df_final = df_final.style.apply(highlight_diff, axis=None)
+
+
+    events1 = df1.groupby(['driver_id'], as_index=False)[
+        'displayed_speeding_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count', 'hard_cornering_count'].agg(
+        'sum')
+
+    events2 = df2.groupby(['driver_id'], as_index=False)[
+        'displayed_speeding_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count', 'hard_cornering_count'].agg(
+        'sum')
+    df_event_comp = pd.DataFrame(columns=['driver_id', 'speeding_old', 'speeding_new', 'hard_braking_old',
+                                          'hard_braking_new', 'hard_acceleration_old', 'hard_acceleration_new',
+                                          'phone_manipulation_old', 'phone_manipulation_new', 'hard_cornering_old',
+                                          'hard_cornering_new'])
+
+    df_event_comp['driver_id'] = events1['driver_id']
+    df_event_comp['speeding_old'] = events1['displayed_speeding_count']
+    df_event_comp['speeding_new'] = events2['displayed_speeding_count']
+    df_event_comp['hard_braking_old'] = events1['hard_braking_count']
+    df_event_comp['hard_braking_new'] = events2['hard_braking_count']
+    df_event_comp['hard_acceleration_old'] = events1['hard_acceleration_count']
+    df_event_comp['hard_acceleration_new'] = events2['hard_acceleration_count']
+    df_event_comp['phone_manipulation_old'] = events1['phone_manipulation_count']
+    df_event_comp['phone_manipulation_new'] = events2['phone_manipulation_count']
+    df_event_comp['hard_cornering_old'] = events1['hard_cornering_count']
+    df_event_comp['hard_cornering_new'] = events2['hard_cornering_count']
+
     df_final.to_excel(writer, sheet_name='Driver Summary', startrow=11, startcol=1)
+    df_event_comp.to_excel(writer, sheet_name='Driver Summary', startrow=13, startcol=4, index=False)
 
 
 # compareTrips('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/', "non-armada", '3.2.5')
@@ -136,3 +163,6 @@ def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
     result.to_excel(writer, sheet_name='JSON Comparision', startrow=2, startcol=1)
     print("Files are ", "identical" if isallfilesidentical else "not identical")
     return writer
+
+#compareTrips(path, poolsize, version, regressionType, threadsize, identicaljsonreport):
+#compareTrips("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/",PoolSize.POOL_1000.value,'3.3.19.5',RegressionTypeEnum.MentorBusiness,4, IdenticalJSONReportEnum.No)

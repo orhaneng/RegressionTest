@@ -33,7 +33,7 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
         if len(file_names[idx]) > 0:
             sessionidlist = []
             for jdx in range(len(file_names[idx])):
-                if file_names[idx][jdx].endswith('.bin_v2.gz'):
+                if file_names[idx][jdx].endswith('.bin_v2.gz') or file_names[idx][jdx].endswith('.bin_v2.gz.opt'):
                     if regressiontype == RegressionTypeEnum.MentorBusiness:
 
                         input.append(

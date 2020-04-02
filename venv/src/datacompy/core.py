@@ -629,6 +629,13 @@ class Compare(object):
                                effectedMaxDriverCount * 100 / uniqueDriverCountHasManipulation, 2))]
             }, index=[0, 1, 2, 3, 4])
 
+
+
+
+
+
+
+
         df_row_driver_summary.to_excel(writer, sheet_name='Driver Summary', startrow=2, startcol=1)
 
         df_match_stats = pd.DataFrame()
@@ -694,7 +701,7 @@ class Compare(object):
         worksheet.insert_image('B50', os.path.dirname(os.path.realpath(__file__)) + "/graphs/myplot.png")
 
         plt.close()
-
+    '''
     def createScoreDensityChart(self, df2, writer):
         score = list(df2['score'][df2.score != 'None'].apply(lambda x: int(x)))
         score.sort(reverse=True)
@@ -710,20 +717,29 @@ class Compare(object):
         worksheet = writer.sheets['Graphs']
         worksheet.insert_image('B2', os.path.dirname(os.path.realpath(__file__)) + "/graphs/mydensity.png")
         plt.close()
-
+    '''
     def createTripScoreDensityChart(self, writer):
         list= []
         for x in range(0, 850):
             if x % 10 == 0:
                 list.append(x)
         plt.subplot(2, 1, 1)
-        plt.hist(self.df1['score'], color='blue', edgecolor='black',
+
+        df1score = self.df1.copy(deep=True)
+        df1score.loc[df1score['score'] == 'None', 'score'] = 0
+        df1score['score'] = df1score['score'].astype(int)
+        plt.hist(df1score['score'], color='blue', edgecolor='black',
                  bins=list)
         plt.title('Histogram of Trip Counts(Old)/Score')
         plt.xlabel('Score')
         plt.ylabel('Trip Counts')
         plt.subplot(2, 1, 2)
-        plt.hist(self.df2['score'], color='blue', edgecolor='black',
+
+        df2score = self.df2.copy(deep=True)
+        df2score.loc[df2score['score'] == 'None', 'score'] = 0
+        df2score['score'] = df2score['score'].astype(int)
+
+        plt.hist(df2score['score'], color='blue', edgecolor='black',
                  bins=list)
         plt.title('Histogram of Trip Counts(New)/Score')
         plt.xlabel('Score')

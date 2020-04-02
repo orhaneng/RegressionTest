@@ -124,9 +124,9 @@ def gettinginputs():
             jsonfilenameEnum = JSONfilenameEnum.base
 
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest or regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
-            threadsize = 10
+            threadsize = 16
         else:
-            threadsize = 10
+            threadsize = 16
 
         if regressionType == RegressionTypeEnum.MentorBusiness:
             print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
