@@ -1,4 +1,4 @@
-from src.Enums import *
+from Enums import *
 from multiprocessing import Pool
 import tqdm
 
@@ -64,12 +64,13 @@ def processDriver(driver_id, regressiontype, trip_id, FOLDER_PATH):
             response.status_code) + "-filename:" + session_id + " reason:" + str(response.reason))
     response_json = json.loads(response.content)
     count = 0;
-    for item in response_json['eventCounts']:
-        if item['behaviouralImpact'] == 'NEGATIVE':
-            for eventitem in item['eventTypeCounts']:
-                if eventitem['eventType'] == 'PHONE_MANIPULATION':
-                    count = eventitem['count']
-                    break
+    if 'eventCounts' in response_json:
+        for item in response_json['eventCounts']:
+            if item['behaviouralImpact'] == 'NEGATIVE':
+                for eventitem in item['eventTypeCounts']:
+                    if eventitem['eventType'] == 'PHONE_MANIPULATION':
+                        count = eventitem['count']
+                        break
     log_row = [driver_id, trip_id, response.status_code, count]
     return log_row
 

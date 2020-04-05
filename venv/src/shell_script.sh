@@ -3,7 +3,7 @@ set -e
 count=1
 for x in $s3list
 do
-        printf $count
+    printf $count
 	count=`expr $count + 1`
-  	aws s3 cp s3://mentor.trips.production-365/$x /Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripfiles/tlm112/$x
+  	aws s3 cp s3://mentor.trips.production-365/$x /home/ec2-user/regressiontest/tripfiles/tlm112/$x
 done

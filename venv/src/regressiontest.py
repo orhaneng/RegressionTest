@@ -2,8 +2,6 @@ from src.telematicsmultiprocess import uploadTripFilesandProcess
 from src.get_trip_from_regression_json import getTripsFromRegressionServer
 from src.comparision import compareTrips
 from src.comparision import checkfolder
-from src.tlm112 import startProcessNonGeotabFiles
-from src.tlm112 import startProcessGeotabFiles
 from src.changejsonfilename import changefilenames
 from enum import Enum
 from src.Enums import *
@@ -86,7 +84,7 @@ def checkDynamoDBProcess():
 def gettinginputs():
     try:
         print(
-            "Select your type.. (1-Mentor Business 2-Non-Armada 3-GEOTAB 4-TLM-112 non-geotab 5-TLM-112 GEOTAB)")
+            "Select your type.. (1-Mentor Business 2-Non-Armada 3-GEOTAB)")
         selectionregressiontype = input("Selection:")
         if selectionregressiontype == "1":
             regressionType = RegressionTypeEnum.MentorBusiness
@@ -94,20 +92,10 @@ def gettinginputs():
             regressionType = RegressionTypeEnum.NonArmada
         elif selectionregressiontype == '3':
             regressionType = RegressionTypeEnum.GEOTAB
-        elif selectionregressiontype == '4':
-            regressionType = RegressionTypeEnum.TLM112NONEGEOTAB
-        elif selectionregressiontype == '5':
-            regressionType = RegressionTypeEnum.TLM112GEOTAB
         else:
             print("The selection is not valid!")
             exit()
 
-        if regressionType == RegressionTypeEnum.TLM112NONEGEOTAB:
-            startProcessNonGeotabFiles()
-            exit()
-        if regressionType == RegressionTypeEnum.TLM112GEOTAB:
-            startProcessGeotabFiles()
-            exit()
         if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.NonArmada:
             print(
                 "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")

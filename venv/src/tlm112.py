@@ -7,8 +7,8 @@ import subprocess
 import platform
 import time
 
-from src.tlm112_utility import *
-from src.tlm112geotab import *
+from tlm112_utility import *
+from tlm112geotab import *
 
 
 if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
@@ -21,8 +21,14 @@ def startProcessNonGeotabFiles():
     killoldtelematicsprocess()
     startTelematics(FOLDER_PATH)
     processCSVtoGetS3key(FOLDER_PATH)
+    killoldtelematicsprocess()
 
 def startProcessGeotabFiles():
     killoldtelematicsprocess()
     startTelematics(FOLDER_PATH)
     processgetstartendtimefromJSON(FOLDER_PATH)
+    killoldtelematicsprocess()
+
+
+
+startProcessGeotabFiles()

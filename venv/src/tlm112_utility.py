@@ -1,4 +1,4 @@
-from src.Enums import *
+from Enums import *
 from multiprocessing import Pool
 import tqdm
 
@@ -16,7 +16,7 @@ import sys
 import signal
 import mysql.connector
 
-threadcount = 1
+threadcount = 2
 
 
 def multi_run_wrapper(args):
@@ -78,27 +78,47 @@ def connectAurora(query):
     cursor = cnx.cursor()
     cursor.execute(query)
     df_result = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key'])
+    df_result2 = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key'])
+
     for (driver_id, trip_id, s3key) in cursor:
         df_result = df_result.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key},
                                      ignore_index=True)
-
+        '''
+        df_result2 = df_result2[(df_result2['trip_id'] == trip_id) & (df_result2['driver_id'] == driver_id)]
+        if len(df_result2) == 0:
+            df_result2 = df_result2.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key},
+                                           ignore_index=True)
+        else:
+            s3 = df_result2['s3_key'].values
+            s3list = str(s3[0]).split('&')
+            s3list.append(s3key)
+            df_result2.loc[(df_result2['trip_id'] == trip_id) & (df_result2['driver_id'] == driver_id),'s3_key'] = '&'.join(s3list)
+        '''
     cnx.close()
     print("thread finished")
     return df_result
 
 
 def processCSVtoGetS3key(FOLDER_PATH):
+
+    print("non-geotab starts")
+    print("thread count = "+ str(threadcount))
+    from datetime import datetime
+    now = datetime.now()
+    print("start")
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    print("date and time =", dt_string)
+
     import mysql.connector
-    exampleList = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/nongeotabtrips.csv",
-                              index_col=False)
+    exampleList = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/data50000.csv",
+                              index_col=False, nrows=10)
     result = "select driver_id, trip_id,s3_key from trip_file where "
     query = []
     count = 1
     listquery = []
+
     for i, row in exampleList.iterrows():
         query.append("(driver_id = '" + str(row[1]) + "' and trip_id='" + str(row[0]) + "') or ")
-        if count == 3000:
-            break
         if count % 1000 == 0 or count == len(exampleList):
             listquery.append([result + "".join(query)[:-3]])
             query = []
@@ -116,22 +136,36 @@ def processCSVtoGetS3key(FOLDER_PATH):
         pool.terminate()
         pool.join()
         exit()
-
+    
     mergedf = pd.concat(resultlist)
 
     mergedf.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/weekly_trips_final.csv", index=False)
-
+    mergedf = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/weekly_trips_final.csv", index_col=False)
     processTrips(mergedf, exampleList, FOLDER_PATH)
 
 
 def processTrips(df_result, exampleList, FOLDER_PATH):
     threadjobs = []
-    print("process trips start")
-    for index, row in exampleList.iterrows():
-        s3listbyTripId = df_result[df_result["trip_id"] == row["trip_id"]]['s3_key'].to_list()
-        threadjobs.append([s3listbyTripId, row['driver_id'], row['trip_id'], row['source'], FOLDER_PATH])
 
+    from datetime import datetime
+    now = datetime.now()
+    print("processTrips")
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    print("date and time =", dt_string)
+    print("process trips start")
+    count = 0
+    for index, row in exampleList.iterrows():
+
+        s3listbyTripId = df_result[df_result["trip_id"] == row["trip_id"]]['s3_key'].to_list()
+        threadjobs.append([s3listbyTripId, row['driver_id'], row['trip_id'], row['source'], FOLDER_PATH, count])
+        count =count+1
+
+    from datetime import datetime
+    now = datetime.now()
     print("before pool")
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    print("date and time =", dt_string)
+
     pool = Pool(threadcount)
     try:
         with pool as p:
@@ -152,9 +186,19 @@ def processTrips(df_result, exampleList, FOLDER_PATH):
             2]
 
     exampleList.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/non-geotab/dataafterprocess.csv")
+    from datetime import datetime
+    now = datetime.now()
+    print("finish")
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    print("date and time =", dt_string)
 
+def processDriver(driver_id, regressiontype, session_id,trip_id, FOLDER_PATH, count):
 
-def processDriver(driver_id, regressiontype, session_id, FOLDER_PATH):
+    print()
+    print()
+    print("count:",count)
+    print()
+    print()
     if regressiontype == RegressionTypeEnum.MentorBusiness:
         server_url = 'http://localhost:8080/api/v2/drivers'
         file_dir = batch_file_dir + driver_id + '/' + file_name
@@ -169,19 +213,21 @@ def processDriver(driver_id, regressiontype, session_id, FOLDER_PATH):
     if response.status_code != 200:
         print("driver_id:" + str(driver_id) + " " + "-status:" + str(
             response.status_code) + "-filename:" + session_id + " reason:" + str(response.reason))
+
     response_json = json.loads(response.content)
     count = 0;
-    for item in response_json['eventCounts']:
-        if item['behaviouralImpact'] == 'NEGATIVE':
-            for eventitem in item['eventTypeCounts']:
-                if eventitem['eventType'] == 'PHONE_MANIPULATION':
-                    count = eventitem['count']
-                    break
-    log_row = [driver_id, response_json['tripId'], response.status_code, count]
+    if 'eventCounts' in response_json:
+        for item in response_json['eventCounts']:
+            if item['behaviouralImpact'] == 'NEGATIVE':
+                for eventitem in item['eventTypeCounts']:
+                    if eventitem['eventType'] == 'PHONE_MANIPULATION':
+                        count = eventitem['count']
+                        break
+    log_row = [driver_id, trip_id, response.status_code, count]
     return log_row
 
 
-def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source, FOLDER_PATH):
+def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source, FOLDER_PATH, count):
     session_id = ''
     if source == "MENTOR_NON_GEOTAB":
         session_id = trip_id.split('-')[1]
@@ -189,8 +235,7 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
 
     os.putenv('s3list', ' '.join(s3listbyTripId))
     subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
-    log = processDriver(driver_id, regressionType, session_id, FOLDER_PATH)
-
+    log = processDriver(driver_id, regressionType, session_id,trip_id, FOLDER_PATH, count)
     for item in s3listbyTripId:
         os.system(
             "rm -r " + FOLDER_PATH + "tripfiles/tlm112/" + item)
