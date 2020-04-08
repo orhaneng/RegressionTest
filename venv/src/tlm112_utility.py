@@ -15,7 +15,7 @@ import sys
 import signal
 import mysql.connector
 
-threadcount = 4
+threadcount = 20
 
 
 def multi_run_wrapper(args):
@@ -231,7 +231,6 @@ def processDriver(driver_id, session_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH,
         data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = response.status_code
         data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['description']] = response.reason
         data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['pmcount']] = str(count)
-
         data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv", index=False)
 
 
@@ -239,6 +238,7 @@ def processDriver(driver_id, session_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH,
         log_row = [driver_id, trip_id, e, count]
         data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = "error"
         data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = e
+        data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv", index=False)
 
     finally:
         return log_row

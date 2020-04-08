@@ -26,13 +26,14 @@ def multi_run_wrapperAurora(args):
     return connectAurora(*args)
 
 
-def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source, FOLDER_PATH):
+def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source, FOLDER_PATH, RESULT_FILE_PATH,
+                                      resultfilename):
     log = [driver_id, trip_id, "", 0]
     try:
         os.putenv('s3list', ' '.join(s3listbyTripId))
         # os.putenv('path', FOLDER_PATH+'tripfiles/tlm112-geotab/rawfiles/$x')
         subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
-        log = processDriver(driver_id, trip_id, FOLDER_PATH)
+        log = processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
         for item in s3listbyTripId:
             os.system(
                 "rm -r " + FOLDER_PATH + "tripfiles/tlm112/" + item)
@@ -44,7 +45,7 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
         return log
 
 
-def processDriver(driver_id, trip_id, FOLDER_PATH):
+def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
     log_row = [driver_id, trip_id, "", 0]
     try:
         server_url = 'http://localhost:8080/api/v2/drivers'
@@ -77,13 +78,25 @@ def processDriver(driver_id, trip_id, FOLDER_PATH):
                             count = eventitem['count']
                             break
         log_row = [driver_id, trip_id, response.status_code, count]
+        data = pd.read_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv")
+        data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['complete']] = True
+        data.loc[
+            (data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = response.status_code
+        data.loc[
+            (data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['description']] = response.reason
+        data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['pmcount']] = str(count)
+        data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv", index=False)
     except Exception as e:
         log_row = [driver_id, trip_id, e, count]
+        data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = "error"
+        data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = e
+        data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv", index=False)
+
     finally:
         return log_row
 
 
-def connectAurora(driver_id, trip_id, FOLDER_PATH):
+def connectAurora(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
     cnx = mysql.connector.connect(user='omer', password='3$@Wed#f%g67dfg34%gH2s8',
                                   host='prod-telematics-aurora-cluster.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
                                   database='telematics')
@@ -95,8 +108,8 @@ def connectAurora(driver_id, trip_id, FOLDER_PATH):
     JSONpath = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(driver_id) + '-' + str(
         trip_id) + '.json'
     jsonurl = "http://172.31.182.19:8080/api/v2/drivers/" + str(
-            driver_id) + "/trips/" + str(
-            trip_id) + "?facet=all"
+        driver_id) + "/trips/" + str(
+        trip_id) + "?facet=all"
     response_json = requests.get(jsonurl).content.decode(
         "utf-8")
     file_dir = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(
@@ -107,8 +120,7 @@ def connectAurora(driver_id, trip_id, FOLDER_PATH):
     with open(file_dir, 'w') as outfile:
         json.dump(trip, outfile)
 
-
-    #with open(JSONpath, 'r') as myfile:
+    # with open(JSONpath, 'r') as myfile:
     #    trip = json.loads(myfile.read())
     starttimestamp = trip['startTimestamp']
     endtimestamp = trip['endTimestamp']
@@ -130,7 +142,7 @@ def connectAurora(driver_id, trip_id, FOLDER_PATH):
     return df_result
 
 
-def processgetstartendtimefromJSON(FOLDER_PATH):
+def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, exampleList):
     print("geotab starts")
     print("thread count = " + str(threadcount))
     from datetime import datetime
@@ -139,13 +151,10 @@ def processgetstartendtimefromJSON(FOLDER_PATH):
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
     print("date and time =", dt_string)
 
-    exampleList = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/data1000.csv",
-                              index_col=False, nrows=10)
-
     count = len(exampleList)
     listquery = []
     for i, row in exampleList.iterrows():
-        listquery.append([row['driver_id'], row['trip_id'], FOLDER_PATH])
+        listquery.append([row['driver_id'], row['trip_id'], FOLDER_PATH, RESULT_FILE_PATH, resultfilename])
 
     pool = Pool(threadcount)
     try:
@@ -172,13 +181,14 @@ def processgetstartendtimefromJSON(FOLDER_PATH):
         FOLDER_PATH + "pmanalysis_tlm_112/geotab/telematics.csv",
         index=False)
 
-    mergedf = pd.read_csv(
-        FOLDER_PATH + "pmanalysis_tlm_112/geotab/telematics.csv")
+    mergedf.to_csv(
+        FOLDER_PATH  + RESULT_FILE_PATH + resultfilename + "telematics.csv",
+        index=False)
 
-    processTrips(mergedf, exampleList, FOLDER_PATH)
+    processTrips(mergedf, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
 
 
-def processTrips(df_result, exampleList, FOLDER_PATH):
+def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
     threadjobs = []
     print("process trips start")
     from datetime import datetime
@@ -188,7 +198,9 @@ def processTrips(df_result, exampleList, FOLDER_PATH):
 
     for index, row in exampleList.iterrows():
         s3listbyTripId = df_result[df_result["trip_id"] == row["trip_id"]]['s3_key'].to_list()
-        threadjobs.append([s3listbyTripId, row['driver_id'], row['trip_id'], row['source'], FOLDER_PATH])
+        threadjobs.append(
+            [s3listbyTripId, row['driver_id'], row['trip_id'], row['source'], FOLDER_PATH, RESULT_FILE_PATH,
+             resultfilename])
 
     print("before pool")
     from datetime import datetime
@@ -207,13 +219,8 @@ def processTrips(df_result, exampleList, FOLDER_PATH):
         pool.terminate()
         pool.join()
         exit()
-    exampleList["PM_COUNT"] = ""
-    exampleList["STATUS"] = ""
-    for item in result:
-        exampleList.loc[(exampleList['trip_id'] == item[1]) & (exampleList['driver_id'] == item[0]), ['PM_COUNT']] = \
-            item[3]
-        exampleList.loc[(exampleList['trip_id'] == item[1]) & (exampleList['driver_id'] == item[0]), ['STATUS']] = item[
-            2]
+    os.system("mv "+FOLDER_PATH+"jsonfiles/temp " +FOLDER_PATH+RESULT_FILE_PATH+"json")
+    os.makedirs(FOLDER_PATH+"jsonfiles/temp")
 
     exampleList.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/dataafterprocess.csv")
     from datetime import datetime
