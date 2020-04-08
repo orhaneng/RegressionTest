@@ -3,7 +3,7 @@ import tqdm
 
 import os
 
-#os.system("source activate base")
+# os.system("source activate base")
 import pandas as pd
 import shutil
 import subprocess
@@ -60,10 +60,20 @@ def processDriver(driver_id, trip_id, FOLDER_PATH):
         response_json = json.loads(response.content)
         count = 0;
         if 'eventCounts' in response_json:
+            print()
+            print()
+            print("in event counts")
+            print()
+            print()
             for item in response_json['eventCounts']:
                 if item['behaviouralImpact'] == 'NEGATIVE':
                     for eventitem in item['eventTypeCounts']:
                         if eventitem['eventType'] == 'PHONE_MANIPULATION':
+                            print()
+                            print()
+                            print("in PHONE_MANIPULATION")
+                            print()
+                            print()
                             count = eventitem['count']
                             break
         log_row = [driver_id, trip_id, response.status_code, count]
@@ -84,13 +94,27 @@ def connectAurora(driver_id, trip_id, FOLDER_PATH):
 
     JSONpath = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(driver_id) + '-' + str(
         trip_id) + '.json'
-    with open(JSONpath, 'r') as myfile:
-        trip = json.loads(myfile.read())
+    jsonurl = "http://172.31.182.19:8080/api/v2/drivers/" + str(
+            driver_id) + "/trips/" + str(
+            trip_id) + "?facet=all"
+    response_json = requests.get(jsonurl).content.decode(
+        "utf-8")
+    file_dir = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(
+        driver_id) + "-" + str(
+        trip_id) + ".json"
+    os.makedirs(FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id), exist_ok=True)
+    trip = json.loads(response_json)
+    with open(file_dir, 'w') as outfile:
+        json.dump(trip, outfile)
+
+
+    #with open(JSONpath, 'r') as myfile:
+    #    trip = json.loads(myfile.read())
     starttimestamp = trip['startTimestamp']
     endtimestamp = trip['endTimestamp']
     query = r'select * from telematics.trip_file where ((start_time between ' + str(
         starttimestamp) + ' and ' + str(endtimestamp) + ') or (end_time between ' + str(starttimestamp) + ' and ' + str(
-        endtimestamp) + ' )) and driver_id ='+"'" + str(driver_id) + "'"
+        endtimestamp) + ' )) and driver_id =' + "'" + str(driver_id) + "'"
     cursor = cnx.cursor()
     cursor.execute(query)
     for (driver_id_db, trip_id_db, file_name, expire_in_days, start_time, end_time, s3_key, created_at,
@@ -114,7 +138,6 @@ def processgetstartendtimefromJSON(FOLDER_PATH):
     print("start")
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
     print("date and time =", dt_string)
-
 
     exampleList = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/data1000.csv",
                               index_col=False, nrows=10)
