@@ -14,8 +14,9 @@ import json
 import sys
 import signal
 import mysql.connector
+import threading
 
-threadcount = 4
+threadcount = 16
 
 
 def multi_run_wrapper(args):
@@ -30,15 +31,23 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
                                       resultfilename):
     log = [driver_id, trip_id, "", 0]
     try:
-        os.putenv('s3list', ' '.join(s3listbyTripId))
-        # os.putenv('path', FOLDER_PATH+'tripfiles/tlm112-geotab/rawfiles/$x')
-        subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
-        log = processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
-        for item in s3listbyTripId:
-            os.system(
-                "rm -r " + FOLDER_PATH + "tripfiles/tlm112/" + item)
-        if not os.listdir(FOLDER_PATH + 'tripfiles/tlm112/' + s3listbyTripId[0].split('/')[0]):
-            os.system('rm -r ' + FOLDER_PATH + 'tripfiles/tlm112/' + s3listbyTripId[0].split('/')[0])
+        if len(s3listbyTripId) > 0:
+            os.putenv('s3list', ' '.join(s3listbyTripId))
+            # os.putenv('path', FOLDER_PATH+'tripfiles/tlm112-geotab/rawfiles/$x')
+            subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
+            log = processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
+            for item in s3listbyTripId:
+                os.system(
+                    "rm -r " + FOLDER_PATH + "tripfiles/tlm112/" + item)
+            if not os.listdir(FOLDER_PATH + 'tripfiles/tlm112/' + s3listbyTripId[0].split('/')[0]):
+                os.system('rm -r ' + FOLDER_PATH + 'tripfiles/tlm112/' + s3listbyTripId[0].split('/')[0])
+        else:
+            log[2] = "no s3_key"
+        os.system(
+            "rm -r " + FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(
+                driver_id) + "-" + str(trip_id) + ".json")
+        if not os.listdir(FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id)):
+            os.system('rm -r ' + FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id))
     except Exception as e:
         log[2] = e
     finally:
@@ -47,6 +56,7 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
 
 def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
     log_row = [driver_id, trip_id, "", 0]
+    count = "";
     try:
         server_url = 'http://localhost:8080/api/v2/drivers'
         headers = {'Content-type': 'application/json'}
@@ -54,12 +64,11 @@ def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilen
             driver_id) + "-" + str(
             trip_id) + ".json"
         upload_url = server_url + '/' + str(driver_id) + '/trips'
-        response = requests.post(upload_url, data=open(file_dir, 'rb'), headers=headers)
+        response = requests.post(upload_url, data=open(file_dir, 'rb'), headers=headers, timeout=300)
         if response.status_code != 200:
             print("driver_id:" + str(driver_id) + " " + "-status:" + str(
                 response.status_code) + "-filename:" + session_id + " reason:" + str(response.reason))
         response_json = json.loads(response.content)
-        count = 0;
         if 'eventCounts' in response_json:
             print()
             print()
@@ -75,22 +84,39 @@ def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilen
                             print("in PHONE_MANIPULATION")
                             print()
                             print()
-                            count = eventitem['count']
+                            count = str(eventitem['count'])
                             break
         log_row = [driver_id, trip_id, response.status_code, count]
-        data = pd.read_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv")
-        data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['complete']] = True
-        data.loc[
-            (data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = response.status_code
-        data.loc[
-            (data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['description']] = response.reason
-        data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['pmcount']] = str(count)
-        data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv", index=False)
+        # data = pd.read_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv")
+        # data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['complete','status','description','pmcount']] = [True,response.status_code,response.reason,str(count)]
+        # csv_output_lock = threading.Lock()
+
+        import os.path
+        from os import path
+
+        trip_idserver = trip_id
+        if "tripId" in response_json:
+            trip_idserver = response_json["tripId"]
+
+        if not path.exists(FOLDER_PATH + RESULT_FILE_PATH + "json/" + str(driver_id)):
+            os.makedirs(FOLDER_PATH + RESULT_FILE_PATH + "json/" + str(driver_id), exist_ok=True)
+        os.system("mv " + FOLDER_PATH + "jsonfiles/temp/" + str(driver_id) + "/trip." + str(driver_id) + "." + str(
+            trip_idserver) + ".json "
+                  + FOLDER_PATH + RESULT_FILE_PATH + "json/" + str(driver_id) + "/trip." + str(driver_id) + "." + str(
+            trip_id) + ".json")
+        if not os.listdir(FOLDER_PATH + "jsonfiles/temp/" + str(driver_id)):
+            os.system('rm -r ' + FOLDER_PATH + "jsonfiles/temp/" + str(driver_id))
+        # with csv_output_lock:
+        #    data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv", index=False)
+
     except Exception as e:
-        log_row = [driver_id, trip_id, e, count]
-        data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = "error"
-        data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = e
-        data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv", index=False)
+        try:
+            log_row = [driver_id, trip_id, "processDriver:" + str(e), count]
+            # data.loc[(data['trip_id'] == trip_id) & (data['driver_id'] == int(driver_id)), ['status']] = e
+            # with csv_output_lock:
+            #    data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv", index=False)
+        except Exception as e:
+            print(str(e))
 
     finally:
         return log_row
@@ -107,7 +133,7 @@ def connectAurora(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilen
 
     JSONpath = FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(driver_id) + '-' + str(
         trip_id) + '.json'
-    jsonurl = "http://172.31.182.19:8080/api/v2/drivers/" + str(
+    jsonurl = "http://prod-uploader-845833724.us-west-2.elb.amazonaws.com/api/v2/drivers/" + str(
         driver_id) + "/trips/" + str(
         trip_id) + "?facet=all"
     response_json = requests.get(jsonurl).content.decode(
@@ -182,7 +208,7 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
         index=False)
 
     mergedf.to_csv(
-        FOLDER_PATH  + RESULT_FILE_PATH + resultfilename + "telematics.csv",
+        FOLDER_PATH + RESULT_FILE_PATH + resultfilename + "telematics.csv",
         index=False)
 
     processTrips(mergedf, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
@@ -219,10 +245,17 @@ def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfi
         pool.terminate()
         pool.join()
         exit()
-    os.system("mv "+FOLDER_PATH+"jsonfiles/temp " +FOLDER_PATH+RESULT_FILE_PATH+"json")
-    os.makedirs(FOLDER_PATH+"jsonfiles/temp")
 
-    exampleList.to_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/dataafterprocess.csv")
+    exampleList["PM_COUNT"] = ""
+    exampleList["STATUS"] = ""
+
+    for item in result:
+        exampleList.loc[
+            (exampleList['trip_id'] == item[1]) & (exampleList['driver_id'] == item[0]), ['PM_COUNT', 'STATUS']] = [
+            item[3], item[2]]
+
+    exampleList.to_csv(FOLDER_PATH + RESULT_FILE_PATH + "/" + resultfilename + "dataafterprocess.csv")
+
     from datetime import datetime
     now = datetime.now()
     print("finished")
