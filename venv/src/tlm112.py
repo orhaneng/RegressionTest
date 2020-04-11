@@ -12,9 +12,9 @@ from tlm112_utility import *
 from tlm112geotab import *
 
 # if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
-FOLDER_PATH = "/home/ec2-user/regressiontest/"
+#FOLDER_PATH = "/home/ec2-user/regressiontest/"
 # else:
-# FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 weeks = {1: ['2019-10-06', '2019-10-12'],
          2: ['2019-10-13', '2019-10-19'],
          3: ['2019-10-20', '2019-10-26'],
@@ -52,13 +52,13 @@ def connect2Redshift():
     for i in range(1, 3):
         weekstart = weeks.get(i)[0]
         weekend = weeks.get(i)[1]
-        # source = "MENTOR_GEOTAB"
-        source = "MENTOR_NON_GEOTAB"
+        source = "MENTOR_GEOTAB"
+        #source = "MENTOR_NON_GEOTAB"
 
         RESULT_FILE_PATH = "jsonfiles/" + weekstart + "_" + weekend + "#" + source + "/"
         resultfilename = weekstart + "_" + weekend + "#" + source
         os.makedirs(FOLDER_PATH + RESULT_FILE_PATH, exist_ok=True)
-        logging.info("week=" + str(weeks[i]) + ",source=" + source + " started")
+        logging.info("week=" + str(weeks[i]) + ",source=" + source + " STARTED")
 
         redshiftstart = datetime.now()
 
@@ -76,15 +76,14 @@ def connect2Redshift():
 
         if source == "MENTOR_NON_GEOTAB":
             data['index'] = np.arange(data.shape[0])
-
             data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv")
-            processTripsgeotab(data, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
+            processTripsNongeotab(data, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
 
         if source == "MENTOR_GEOTAB":
+            data['index'] = np.arange(data.shape[0])
             data['FOLDER_PATH'] = FOLDER_PATH
             data['RESULT_FILE_PATH'] = RESULT_FILE_PATH
             data['resultfilename'] = resultfilename
-            data['pmcount'] = ""
             data.to_csv(FOLDER_PATH + RESULT_FILE_PATH + resultfilename + ".csv")
             startProcessGeotabFiles(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data)
         logging.info("week=" + str(weeks[i]) + ",source=" + source + "  FINISHED")

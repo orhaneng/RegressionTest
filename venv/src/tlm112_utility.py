@@ -88,7 +88,7 @@ def connectAurora(trip_id, driver_id):
     return s3list
 
 
-def processTripsgeotab(exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
+def processTripsNongeotab(exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
 
     print("non-geotab starts")
     print("thread count = " + str(threadcount))
