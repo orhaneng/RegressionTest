@@ -59,7 +59,7 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
                 driver_id) + "-" + str(trip_id) + ".json")
         if not os.listdir(FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id)):
             os.system('rm -r ' + FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id))
-        timelog = "s3time:" + str(s3time) + ",telematics:" + str(processtime)
+        timelog = ",s3time:" + str(s3time) + ",telematics:" + str(processtime)
         print("trip_id:" + str(trip_id) + ",driverid:" + str(driver_id) + timelog)
         log[4] = timelog
     except Exception as e:
@@ -236,6 +236,8 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
         FOLDER_PATH + RESULT_FILE_PATH + resultfilename + "telematics.csv",
         index=False)
 
+    killoldtelematicsprocess()
+    startTelematics(FOLDER_PATH)
     processTrips(mergedf, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
 
 
@@ -287,3 +289,46 @@ def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfi
     print("finished")
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
     print("date and time =", dt_string)
+
+
+def killoldtelematicsprocess():
+    p = subprocess.Popen(['ps', '-ef'], stdout=subprocess.PIPE)
+    out, err = p.communicate()
+    os.system("sudo pkill -9 java")
+    index = 0
+    for line in out.splitlines():
+        if 'telematics' in str(line):
+            if platform.node() != 'dev-app-01-10-100-2-42.mentor.internal' or platform.node() != 'e_production-telematics-3.3.19.5-172-31-181-104.app.edriving.com':
+                for item in str(line).split(' '):
+                    if RepresentsInt(item):
+                        index = index + 1
+                        try:
+                            if index == 2:
+                                print(item + " is being killed")
+                                os.kill(int(item), signal.SIGKILL)
+                        except:
+                            continue
+            else:
+                for item in str(line).split(' '):
+                    if RepresentsInt(item):
+                        index = index + 1
+                        if index == 1:
+                            print(item + " is being killed")
+                            os.kill(int(item), signal.SIGKILL)
+        index = 0
+
+
+def startTelematics(FOLDER_PATH):
+    os.system(
+        "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/tlm112/config " + FOLDER_PATH + "build/telematics-server/")
+    print("Starting telematics...")
+    os.system(
+        "sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
+    time.sleep(10)
+
+def RepresentsInt(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False

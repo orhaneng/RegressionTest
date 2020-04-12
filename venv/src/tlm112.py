@@ -49,7 +49,7 @@ def connect2Redshift():
     urllib3_logger = logging.getLogger('urllib3')
     urllib3_logger.setLevel(logging.CRITICAL)
 
-    for i in range(1, 3):
+    for i in range(1, 2):
         weekstart = weeks.get(i)[0]
         weekend = weeks.get(i)[1]
         source = "MENTOR_GEOTAB"
@@ -69,7 +69,7 @@ def connect2Redshift():
                 weekstart + "' and local_date <= '" + weekend + "' and status = 'SUCCESS' AND is_driver = 'true' AND is_personal = 'false' AND is_" \
                                                                 "disputed = 'false'"
         data = sqlio.read_sql_query(query, con)
-
+        logging.info("data size = "+str(len(data)))
         redshifttime = (datetime.now() - redshiftstart).total_seconds()
         print("redshifttime=" + str(redshifttime))
         logging.info("redshifttime=" + str(redshifttime))
