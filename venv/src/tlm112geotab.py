@@ -88,7 +88,7 @@ def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilen
         response = requests.post(upload_url, data=open(file_dir, 'rb'), headers=headers, timeout=300)
         if response.status_code != 200:
             print("driver_id:" + str(driver_id) + " " + "-status:" + str(
-                response.status_code) + "-filename:" + session_id + " reason:" + str(response.reason))
+                response.status_code) + "-trip_id:" + str(trip_id) + " reason:" + str(response.reason))
         response_json = json.loads(response.content)
         log_row = [driver_id, trip_id, response.status_code, count, ""]
         if 'eventCounts' in response_json:
