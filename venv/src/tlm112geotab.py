@@ -186,9 +186,9 @@ def connectAurora(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilen
     cnx.close()
 
     auroratime = (datetime.datetime.now() - aurorastart).total_seconds()
-    logging.info(
-        "index=" + str(index) + ",driver_id=" + str(driver_id) + ",trip_id=" + str(trip_id) + ",auroratime=" + str(
-            auroratime) + ",dynamotime=" + str(dynamotime))
+    #logging.info(
+    #    "index=" + str(index) + ",driver_id=" + str(driver_id) + ",trip_id=" + str(trip_id) + ",auroratime=" + str(
+    #        auroratime) + ",dynamotime=" + str(dynamotime))
     return df_result
 
 
@@ -208,6 +208,8 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
             [row['driver_id'], row['trip_id'], FOLDER_PATH, RESULT_FILE_PATH, resultfilename, row['index']])
 
     pool = Pool(threadcount)
+
+    logging.info("aurora pool started")
     try:
         with pool as p:
             print("Pool-size:", len(listquery))
@@ -219,6 +221,8 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
         pool.terminate()
         pool.join()
         exit()
+
+    logging.info("aurora pool ended")
 
     from datetime import datetime
     now = datetime.now()
