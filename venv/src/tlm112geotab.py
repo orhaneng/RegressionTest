@@ -36,24 +36,20 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
     log = [driver_id, trip_id, "", "", ""]
     timelog = ""
     try:
+        os.putenv('s3list', ' '.join(s3listbyTripId))
+        s3start = datetime.datetime.now()
         if len(s3listbyTripId) > 0:
-            os.putenv('s3list', ' '.join(s3listbyTripId))
-            s3start = datetime.datetime.now()
             subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
-            s3time = (datetime.datetime.now() - s3start).total_seconds()
-            processDriverstart = datetime.datetime.now()
-            log = processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
-            processtime = (datetime.datetime.now() - processDriverstart).total_seconds()
+        s3time = (datetime.datetime.now() - s3start).total_seconds()
+        processDriverstart = datetime.datetime.now()
+        log = processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
+        processtime = (datetime.datetime.now() - processDriverstart).total_seconds()
+        if len(s3listbyTripId) > 0:
             for item in s3listbyTripId:
                 os.system(
                     "rm -r " + FOLDER_PATH + "tripfiles/tlm112/" + item)
             if not os.listdir(FOLDER_PATH + 'tripfiles/tlm112/' + s3listbyTripId[0].split('/')[0]):
                 os.system('rm -r ' + FOLDER_PATH + 'tripfiles/tlm112/' + s3listbyTripId[0].split('/')[0])
-        else:
-            log[2] = "no s3_key"
-            s3time = ""
-            processtime = ""
-
         os.system(
             "rm -r " + FOLDER_PATH + "tripfiles/tlm112-geotab/json/" + str(driver_id) + "/" + str(
                 driver_id) + "-" + str(trip_id) + ".json")

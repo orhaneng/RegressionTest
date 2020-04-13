@@ -12,9 +12,9 @@ from tlm112_utility import *
 from tlm112geotab import *
 
 # if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
-# FOLDER_PATH = "/home/ec2-user/regressiontest/"
+FOLDER_PATH = "/home/ec2-user/regressiontest/"
 # else:
-FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+#FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 weeks = {1: ['2019-10-06', '2019-10-12'],
          2: ['2019-10-13', '2019-10-19'],
          3: ['2019-10-20', '2019-10-26'],
@@ -60,11 +60,11 @@ def connect2Redshift():
                         filename=FOLDER_PATH + "jsonfiles/" + datetime.now().strftime('%d-%m_%H-%M') + 'logger.log')
     urllib3_logger = logging.getLogger('urllib3')
     urllib3_logger.setLevel(logging.CRITICAL)
-    for i in range(1, 2):
+    for i in range(1, 3):
         weekstart = weeks.get(i)[0]
         weekend = weeks.get(i)[1]
-        source = "MENTOR_GEOTAB"
-        # source = "MENTOR_NON_GEOTAB"
+        #source = "MENTOR_GEOTAB"
+        source = "MENTOR_NON_GEOTAB"
 
         RESULT_FILE_PATH = "jsonfiles/" + weekstart + "_" + weekend + "#" + source + "/"
         resultfilename = weekstart + "_" + weekend + "#" + source
@@ -78,7 +78,7 @@ def connect2Redshift():
                                port='5439', user='telematics_readonly', password='telematicsReadOnly123')
         query = "select trip_id, driver_id, source, local_date from trips where source in ('" + source + "') and local_date >= '" + \
                 weekstart + "' and local_date <= '" + weekend + "' and status = 'SUCCESS' AND is_driver = 'true' AND is_personal = 'false' AND is_" \
-                                                                "disputed = 'false' LIMIT 5 "
+                                                                "disputed = 'false'"
 
         data = sqlio.read_sql_query(query, con)
 
@@ -126,4 +126,55 @@ for key,value in weeks.items():
     year2, month2, day2 = value[1].split('-')
     day_name2= datetime.date(int(year2), int(month2), int(day2))
     print(str(value) +"-"+day_name1.strftime("%A") +"-"+ day_name2.strftime("%A")+"-"+str(int(day2)-int(day)))
+    
+2019-10-06-2019-10-12,GEOTAB=78814,NONGEOTAB=60023
+2019-10-13-2019-10-19,GEOTAB=82500,NONGEOTAB=70405
+2019-10-20-2019-10-26,GEOTAB=90641,NONGEOTAB=88484
+2019-10-27-2019-11-02,GEOTAB=90686,NONGEOTAB=91421
+2019-11-03-2019-11-09,GEOTAB=101405,NONGEOTAB=99710
+2019-11-10-2019-11-16,GEOTAB=115601,NONGEOTAB=107327
+2019-11-17-2019-11-23,GEOTAB=125474,NONGEOTAB=113711
+2019-11-24-2019-11-30,GEOTAB=118656,NONGEOTAB=100955
+2019-12-01-2019-12-07,GEOTAB=147935,NONGEOTAB=118646
+2019-12-08-2019-12-14,GEOTAB=153897,NONGEOTAB=120535
+2019-12-15-2019-12-21,GEOTAB=157417,NONGEOTAB=122694
+2019-12-22-2019-12-28,GEOTAB=110414,NONGEOTAB=82142
+2019-12-29-2020-01-04,GEOTAB=125871,NONGEOTAB=77649
+2020-01-05-2020-01-11,GEOTAB=144681,NONGEOTAB=82061
+2020-01-12-2020-01-18,GEOTAB=141964,NONGEOTAB=77943
+2020-01-19-2020-01-25,GEOTAB=141224,NONGEOTAB=74709
+2020-01-26-2020-02-01,GEOTAB=143605,NONGEOTAB=71813
+2020-02-02-2020-02-08,GEOTAB=142910,NONGEOTAB=68174
+2020-02-09-2020-02-15,GEOTAB=143483,NONGEOTAB=67765
+2020-02-16-2020-02-22,GEOTAB=144737,NONGEOTAB=66644
+2020-02-23-2020-02-29,GEOTAB=147352,NONGEOTAB=67943
+2020-03-01-2020-03-07,GEOTAB=149140,NONGEOTAB=69015
+
+
+
+weeks = {1: ['2019-10-06', '2019-10-12'],
+         2: ['2019-10-13', '2019-10-19'],
+         3: ['2019-10-20', '2019-10-26'],
+         4: ['2019-10-27', '2019-11-02'],
+         5: ['2019-11-03', '2019-11-09'],
+         6: ['2019-11-10', '2019-11-16'],
+         7: ['2019-11-17', '2019-11-23'],
+         8: ['2019-11-24', '2019-11-30'],
+         9: ['2019-12-01', '2019-12-07'],
+         10: ['2019-12-08', '2019-12-14'],
+         11: ['2019-12-15', '2019-12-21'],
+         12: ['2019-12-22', '2019-12-28'],
+         13: ['2019-12-29', '2020-01-04'],
+         14: ['2020-01-05', '2020-01-11'],
+         15: ['2020-01-12', '2020-01-18'],
+         16: ['2020-01-19', '2020-01-25'],
+         17: ['2020-01-26', '2020-02-01'],
+         18: ['2020-02-02', '2020-02-08'],
+         19: ['2020-02-09', '2020-02-15'],
+         20: ['2020-02-16', '2020-02-22'],
+         21: ['2020-02-23', '2020-02-29'],
+         22: ['2020-03-01', '2020-03-07'],
+         23: ['2020-03-08', '2020-03-14'],
+         24: ['2020-03-15', '2020-03-21']}
+
 '''
