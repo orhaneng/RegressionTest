@@ -218,7 +218,12 @@ def copyFilesfromS3toRegressionServer(trip_id, driver_id, source, local_date,ind
         elif len(s3listbyTripId) == 1:
             os.putenv('s3list', s3listbyTripId[0])
         s3start = datetime.datetime.now()
-        subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
+
+
+        os.system(
+            "aws s3 cp s3://mentor.trips.production-365/" + str(driver_id) + " "+FOLDER_PATH+
+                                                                       "tripfiles/tlm112/" + str(driver_id) + " --recursive --exclude='*' --include='" + session_id + "*'")
+        #subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
         s3time = (datetime.datetime.now() - s3start).total_seconds()
 
         processDriverstart = datetime.datetime.now()
