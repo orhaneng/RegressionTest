@@ -39,7 +39,8 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
         os.putenv('s3list', ' '.join(s3listbyTripId))
         s3start = datetime.datetime.now()
         if len(s3listbyTripId) > 0:
-            session_id = s3listbyTripId[0].split('/')[1].split("_")[0]
+            for item in s3listbyTripId:
+                session_id = item.split('/')[1].split("_")[0]
             #subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
             os.system(
                 "aws s3 cp s3://mentor.trips.production-365/" + str(driver_id) + " " + FOLDER_PATH +
@@ -47,7 +48,7 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
 
         s3time = (datetime.datetime.now() - s3start).total_seconds()
         processDriverstart = datetime.datetime.now()
-        log = processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
+        log = processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, session_id)
         processtime = (datetime.datetime.now() - processDriverstart).total_seconds()
         if len(s3listbyTripId) > 0:
             for item in s3listbyTripId:
@@ -76,7 +77,7 @@ def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source
         return log
 
 
-def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
+def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename,session_id):
     log_row = [driver_id, trip_id, "", "", ""]
     count = "";
     try:
