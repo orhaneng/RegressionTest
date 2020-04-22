@@ -29,13 +29,17 @@ def multi_run_wrapperAurora(args):
     return connectAurora(*args)
 
 
-def copyFilesfromS3toRegressionServer(s3listbyTripId, driver_id, trip_id, source, FOLDER_PATH, RESULT_FILE_PATH,
-                                      resultfilename, index):
+def copyFilesfromS3toRegressionServer(trip_id, driver_id, source,local_date,index, FOLDER_PATH, RESULT_FILE_PATH,
+                                      resultfilename):
     threadstart = datetime.datetime.now()
 
     log = [driver_id, trip_id, "", "", ""]
     timelog = ""
     try:
+        session_id = ''
+        telematics = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/telematics.csv", index_col=False)
+        s3listbyTripId = telematics[(telematics["trip_id"] == trip_id) & (telematics["driver_id"] == int(driver_id))]['s3_key'].to_list()
+        del telematics
         os.putenv('s3list', ' '.join(s3listbyTripId))
         s3start = datetime.datetime.now()
         if len(s3listbyTripId) > 0:
@@ -208,7 +212,6 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
     for i, row in exampleList.iterrows():
         listquery.append(
             [row['driver_id'], row['trip_id'], FOLDER_PATH, RESULT_FILE_PATH, resultfilename, row['index']])
-
     pool = Pool(threadcount)
 
     logging.info("aurora pool started")
@@ -223,7 +226,7 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
         pool.terminate()
         pool.join()
         exit()
-
+    
     logging.info("aurora pool ended")
 
     from datetime import datetime
@@ -236,10 +239,6 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
 
     mergedf.to_csv(
         FOLDER_PATH + "pmanalysis_tlm_112/geotab/telematics.csv",
-        index=False)
-
-    mergedf.to_csv(
-        FOLDER_PATH + RESULT_FILE_PATH + resultfilename + "telematics.csv",
         index=False)
 
     killoldtelematicsprocess()
@@ -255,11 +254,16 @@ def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfi
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
     print("date and time =", dt_string)
     logging.info("s3_key matching started")
+
+    exampleListthreads = exampleList.values
+    '''
     for index, row in exampleList.iterrows():
         s3listbyTripId = df_result[df_result["trip_id"] == row["trip_id"]]['s3_key'].to_list()
         threadjobs.append(
             [s3listbyTripId, row['driver_id'], row['trip_id'], row['source'], FOLDER_PATH, RESULT_FILE_PATH,
              resultfilename, row["index"]])
+    '''
+
     logging.info("s3_key matching ended")
     from datetime import datetime
     now = datetime.now()
@@ -269,8 +273,8 @@ def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfi
     pool = Pool(threadcount)
     try:
         with pool as p:
-            print("Pool-size:", len(threadjobs))
-            result = list(tqdm.tqdm(p.imap(multi_run_wrapper, threadjobs), total=len(threadjobs)))
+            print("Pool-size:", len(exampleListthreads))
+            result = list(tqdm.tqdm(p.imap(multi_run_wrapper, exampleListthreads), total=len(exampleListthreads)))
 
     except Exception as e:
         print(e)

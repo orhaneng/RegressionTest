@@ -12,9 +12,31 @@ from tlm112_utility import *
 from tlm112geotab import *
 
 # if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
-FOLDER_PATH = "/home/ec2-user/regressiontest/"
+#FOLDER_PATH = "/home/ec2-user/regressiontest/"
 # else:
-#FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+
+'''
+weeks = {1: ['2020-02-23', '2020-02-23'],
+         2: ['2020-02-24', '2020-02-24'],
+         3: ['2020-02-25', '2020-02-25'],
+         4: ['2020-02-26', '2020-02-26'],
+         5: ['2020-02-27', '2020-02-27'],
+         6: ['2020-02-28', '2020-02-28'],
+         7: ['2020-02-29', '2020-02-29']
+         }
+'''
+
+weeks = {1: ['2019-03-01', '2022-03-01'],
+         2: ['2020-03-02', '2020-03-02'],
+         3: ['2020-03-03', '2020-03-03'],
+         4: ['2020-03-04', '2020-03-04'],
+         5: ['2020-03-05', '2020-03-05'],
+         6: ['2020-03-06', '2020-03-06'],
+         7: ['2020-03-07', '2020-03-07']
+         }
+
+'''
 weeks = {1: ['2019-10-06', '2019-10-12'],
          2: ['2019-10-13', '2019-10-19'],
          3: ['2019-10-20', '2019-10-26'],
@@ -39,7 +61,7 @@ weeks = {1: ['2019-10-06', '2019-10-12'],
          22: ['2020-03-01', '2020-03-07'],
          23: ['2020-03-08', '2020-03-14'],
          24: ['2020-03-15', '2020-03-21']}
-
+'''
 
 
 def startProcessNonGeotabFiles(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data):
@@ -60,11 +82,11 @@ def connect2Redshift():
                         filename=FOLDER_PATH + "jsonfiles/" + datetime.now().strftime('%d-%m_%H-%M') + 'logger.log')
     urllib3_logger = logging.getLogger('urllib3')
     urllib3_logger.setLevel(logging.CRITICAL)
-    for i in range(1, 3):
+    for i in range(1, 2):
         weekstart = weeks.get(i)[0]
         weekend = weeks.get(i)[1]
-        #source = "MENTOR_GEOTAB"
-        source = "MENTOR_NON_GEOTAB"
+        source = "MENTOR_GEOTAB"
+        #source = "MENTOR_NON_GEOTAB"
 
         RESULT_FILE_PATH = "jsonfiles/" + weekstart + "_" + weekend + "#" + source + "/"
         resultfilename = weekstart + "_" + weekend + "#" + source
@@ -78,7 +100,7 @@ def connect2Redshift():
                                port='5439', user='telematics_readonly', password='telematicsReadOnly123')
         query = "select trip_id, driver_id, source, local_date from trips where source in ('" + source + "') and local_date >= '" + \
                 weekstart + "' and local_date <= '" + weekend + "' and status = 'SUCCESS' AND is_driver = 'true' AND is_personal = 'false' AND is_" \
-                                                                "disputed = 'false'"
+                                                                "disputed = 'false' and trip_id = 'a058bce7f4fb4f9cb6ee238ed4c7040d'"
 
         data = sqlio.read_sql_query(query, con)
 

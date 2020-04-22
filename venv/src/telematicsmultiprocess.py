@@ -80,41 +80,43 @@ def multi_run_wrapper(args):
 
 
 def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProcessType, regressiontype):
-    if regressiontype == RegressionTypeEnum.MentorBusiness:
-        server_url = 'http://localhost:8080/api/v2/drivers'
-        file_dir = batch_file_dir + driver_id + '/' + file_name
-        upload_url = server_url + '/' + driver_id + '/trips'
-        response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
-    elif regressiontype == RegressionTypeEnum.NonArmada:
-        server_url = 'http://localhost:8080/api/v3/drivers/'
-        timestamp = '{"time": ' + str(int(round(time.time() * 1000))) + '}'
-        upload_url = server_url + str(driver_id) + '/trips/' + file_name
-        headers = {'Content-Type': 'application/json'}
-        response = requests.post(upload_url, data=timestamp, headers=headers)
-    elif regressiontype == RegressionTypeEnum.GEOTAB:
-        server_url = 'http://localhost:8080/api/v2/drivers'
-        headers = {'Content-type': 'application/json'}
-        file_dir = batch_file_dir + driver_id + '/' + file_name
-        upload_url = server_url + '/' + driver_id + '/trips'
-        response = requests.post(upload_url, data=open(file_dir, 'rb'), headers=headers)
-    response_json = None
-    # if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
-    #    print("unsaved mapping data " + response_json.get('reasonDetail'))
-    #    raise Exception("unsaved mapping data")
-    # if response.status_code == 400 and 'bad GPS Records' in str(response.content):
-    #    print('bad gps data-'+"driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
-    #        response.status_code) + "-filename:" + file_name + " reason:" + str(response.content))
-    if response.status_code != 200 and response.status_code != 400:
-        print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
-            response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
+    try:
+        if regressiontype == RegressionTypeEnum.MentorBusiness:
+            server_url = 'http://localhost:8080/api/v2/drivers'
+            file_dir = batch_file_dir + driver_id + '/' + file_name
+            upload_url = server_url + '/' + driver_id + '/trips'
+            response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
+        elif regressiontype == RegressionTypeEnum.NonArmada:
+            server_url = 'http://localhost:8080/api/v3/drivers/'
+            timestamp = '{"time": ' + str(int(round(time.time() * 1000))) + '}'
+            upload_url = server_url + str(driver_id) + '/trips/' + file_name
+            headers = {'Content-Type': 'application/json'}
+            response = requests.post(upload_url, data=timestamp, headers=headers)
+        elif regressiontype == RegressionTypeEnum.GEOTAB:
+            server_url = 'http://localhost:8080/api/v2/drivers'
+            headers = {'Content-type': 'application/json'}
+            file_dir = batch_file_dir + driver_id + '/' + file_name
+            upload_url = server_url + '/' + driver_id + '/trips'
+            response = requests.post(upload_url, data=open(file_dir, 'rb'), headers=headers)
+        response_json = None
+        # if response.status_code == 500 and "NO DATA FOR REGRESSION MAP SERVICE" in response_json.get('reasonDetail'):
+        #    print("unsaved mapping data " + response_json.get('reasonDetail'))
+        #    raise Exception("unsaved mapping data")
+        # if response.status_code == 400 and 'bad GPS Records' in str(response.content):
+        #    print('bad gps data-'+"driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
+        #        response.status_code) + "-filename:" + file_name + " reason:" + str(response.content))
+        if response.status_code != 200 and response.status_code != 400:
+            print("driver_id:" + str(driver_id) + " " + str(idx) + "/" + str(jdx) + "-status:" + str(
+                response.status_code) + "-filename:" + file_name + " reason:" + str(response.reason))
 
-    log_row = []
-    if response.status_code == 200:
-        response_json = json.loads(response.content)
-        log_row.append(str(response_json.get('tripId')))
-        if regressiontype == RegressionTypeEnum.MentorBusiness or regressiontype == RegressionTypeEnum.GEOTAB:
-            log_row.append(file_name)
-        else:
+        log_row = []
+        if response.status_code == 200:
+            response_json = json.loads(response.content)
             log_row.append(str(response_json.get('tripId')))
-
+            if regressiontype == RegressionTypeEnum.MentorBusiness or regressiontype == RegressionTypeEnum.GEOTAB:
+                log_row.append(file_name)
+            else:
+                log_row.append(str(response_json.get('tripId')))
+    except Exception as e:
+        print("driver_id=" + str(driver_id) + ",file_name=" + str(file_name) + ",Error" + str(e))
     return log_row
