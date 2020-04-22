@@ -29,8 +29,9 @@ def multi_run_wrapperAurora(args):
     return connectAurora(*args)
 
 
-def copyFilesfromS3toRegressionServer(trip_id, driver_id, source,local_date,index, FOLDER_PATH, RESULT_FILE_PATH,
-                                      resultfilename):
+def copyFilesfromS3toRegressionServer(indeks, trip_id, driver_id, source, local_date, index, FOLDER_PATH,
+                                      RESULT_FILE_PATH,
+                                      resultfilename, pmcount, status):
     threadstart = datetime.datetime.now()
 
     log = [driver_id, trip_id, "", "", ""]
@@ -38,23 +39,25 @@ def copyFilesfromS3toRegressionServer(trip_id, driver_id, source,local_date,inde
     try:
         session_id = ''
         telematics = pd.read_csv(FOLDER_PATH + "pmanalysis_tlm_112/geotab/telematics.csv", index_col=False)
-        s3listbyTripId = telematics[(telematics["trip_id"] == trip_id) & (telematics["driver_id"] == int(driver_id))]['s3_key'].to_list()
+        s3listbyTripId = telematics[(telematics["trip_id"] == trip_id) & (telematics["driver_id"] == int(driver_id))][
+            's3_key'].to_list()
         del telematics
-        os.putenv('s3list', ' '.join(s3listbyTripId))
         s3start = datetime.datetime.now()
-        if len(s3listbyTripId) > 0:
-            for item in s3listbyTripId:
-                session_id = item.split('/')[1].split("_")[0]
-            #subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
-            os.system(
-                "aws s3 cp s3://mentor.trips.production-365/" + str(driver_id) + " " + FOLDER_PATH +
-                "tripfiles/tlm112/" + str(driver_id) + " --recursive --exclude='*' --include='" + session_id + "*'")
+        if s3listbyTripId[0] != "default":
+            os.putenv('s3list', ' '.join(s3listbyTripId))
+            if len(s3listbyTripId) > 0:
+                for item in s3listbyTripId:
+                    session_id = item.split('/')[1].split("_")[0]
+                # subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
+                os.system(
+                    "aws s3 cp s3://mentor.trips.production-365/" + str(driver_id) + " " + FOLDER_PATH +
+                    "tripfiles/tlm112/" + str(driver_id) + " --recursive --exclude='*' --include='" + session_id + "*'")
 
         s3time = (datetime.datetime.now() - s3start).total_seconds()
         processDriverstart = datetime.datetime.now()
         log = processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, session_id)
         processtime = (datetime.datetime.now() - processDriverstart).total_seconds()
-        if len(s3listbyTripId) > 0:
+        if len(s3listbyTripId) > 0 and s3listbyTripId[0] != 'default':
             for item in s3listbyTripId:
                 os.system(
                     "rm -r " + FOLDER_PATH + "tripfiles/tlm112/" + item)
@@ -81,7 +84,7 @@ def copyFilesfromS3toRegressionServer(trip_id, driver_id, source,local_date,inde
         return log
 
 
-def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename,session_id):
+def processDriver(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, session_id):
     log_row = [driver_id, trip_id, "", "", ""]
     count = "";
     try:
@@ -189,16 +192,25 @@ def connectAurora(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilen
              'updated_at': updated_at},
             ignore_index=True)
 
+    if df_result.empty:
+        df_result = df_result.append(
+            {'driver_id': str(driver_id), 'trip_id': str(trip_id),
+             'file_name': "trip.301136058.1569767922746.bin_v2.gz",
+             'expire_in_days': "365", 'start_time': str("1699760671328"),
+             'end_time': str("1699760671328"), 's3_key': "default", 'created_at': "2019-09-29 06:38:39",
+             'updated_at': " "},
+            ignore_index=True)
+
     cnx.close()
 
     auroratime = (datetime.datetime.now() - aurorastart).total_seconds()
-    #logging.info(
+    # logging.info(
     #    "index=" + str(index) + ",driver_id=" + str(driver_id) + ",trip_id=" + str(trip_id) + ",auroratime=" + str(
     #        auroratime) + ",dynamotime=" + str(dynamotime))
     return df_result
 
 
-def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, exampleList):
+def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, exampleList, weekstart, weekend):
     print("geotab starts")
     print("thread count = " + str(threadcount))
     from datetime import datetime
@@ -226,7 +238,7 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
         pool.terminate()
         pool.join()
         exit()
-    
+
     logging.info("aurora pool ended")
 
     from datetime import datetime
@@ -243,10 +255,10 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
 
     killoldtelematicsprocess()
     startTelematics(FOLDER_PATH)
-    processTrips(mergedf, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename)
+    processTrips(mergedf, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, weekstart, weekend)
 
 
-def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
+def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, weekstart, weekend):
     threadjobs = []
     print("process trips start")
     from datetime import datetime
@@ -287,12 +299,20 @@ def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfi
     exampleList["PM_COUNT"] = ""
     exampleList["STATUS"] = ""
 
+    # exampleList = pd.read_csv(
+    #    FOLDER_PATH + RESULT_FILE_PATH + "/" + resultfilename + "dataafterprocess.csv")
+    exampleList = pd.read_csv(
+        "/home/ec2-user/pmanalysis/" + weekstart + "_" + weekend + "/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocess.csv")
+    # exampleList = pd.read_csv(
+    #    "/Users/omerorhan/Documents/EventDetection/pmanalysis/" + weekstart + "_" + weekend + "/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocess.csv")
+
+    source = "MENTOR_GEOTAB"
     for item in result:
         exampleList.loc[
             (exampleList['trip_id'] == item[1]) & (exampleList['driver_id'] == item[0]), ['PM_COUNT', 'STATUS']] = [
             item[3], item[2]]
 
-    exampleList.to_csv(FOLDER_PATH + RESULT_FILE_PATH + "/" + resultfilename + "dataafterprocess.csv")
+    exampleList.to_csv(FOLDER_PATH + RESULT_FILE_PATH + "/" + resultfilename + "dataafterprocessfix.csv")
 
     from datetime import datetime
     now = datetime.now()
@@ -335,6 +355,7 @@ def startTelematics(FOLDER_PATH):
     os.system(
         "sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
     time.sleep(10)
+
 
 def RepresentsInt(s):
     try:
