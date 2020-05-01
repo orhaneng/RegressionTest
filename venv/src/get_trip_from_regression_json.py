@@ -10,13 +10,15 @@ import os
 import json
 import tqdm
 
+
 def multi_run_wrapper(args):
     return processJSONFile(*args)
+
 
 def getTripsFromRegressionServer(path, threadsize):
     result = pd.DataFrame()
     filelist = []
-    results= []
+    results = []
     for root, dirs, files in os.walk(path):
         for name in files:
             path = os.path.join(root, name)
@@ -28,8 +30,8 @@ def getTripsFromRegressionServer(path, threadsize):
         with pool as p:
             print("Pool-size:", len(filelist))
             comparisonresult = list(tqdm.tqdm(p.imap(multi_run_wrapper, filelist), total=len(filelist)))
-            #[results.append(item) for item in comparisonresult]
-            #for item in comparisonresult:
+            # [results.append(item) for item in comparisonresult]
+            # for item in comparisonresult:
             #    result.append(item)
 
     except Exception as e:
@@ -39,19 +41,20 @@ def getTripsFromRegressionServer(path, threadsize):
         exit()
     result = pd.DataFrame(comparisonresult)
     result.columns = ["trip_id", "driver_id", "start_time", "score",
-                                   "stop_count", "stop_duration",
-                                   "start_count", "start_duration", "smooth_stop_count",
-                                   "smooth_stop_duration", "smooth_accel_count",
-                                   "smooth_accel_duration", "right_turn_count", "right_turn_duration",
-                                   "left_turn_count", "left_turn_duration", "smooth_right_turn_count",
-                                   "smooth_right_turn_duration", "smooth_left_turn_count",
-                                   "smooth_left_turn_duration", "hard_acceleration_count",
-                                   "hard_acceleration_duration", "hard_braking_count",
-                                   "hard_braking_duration", "hard_cornering_count",
-                                   "hard_cornering_duration", "call_in_count",
-                                   "call_in_duration", "call_out_count", "call_out_duration",
-                                   "phone_manipulation_count", "phone_manipulation_duration",
-                                   "displayed_speeding_count", "displayed_speeding_duration"]
+                      "stop_count", "stop_duration",
+                      "start_count", "start_duration", "smooth_stop_count",
+                      "smooth_stop_duration", "smooth_accel_count",
+                      "smooth_accel_duration", "right_turn_count", "right_turn_duration",
+                      "left_turn_count", "left_turn_duration", "smooth_right_turn_count",
+                      "smooth_right_turn_duration", "smooth_left_turn_count",
+                      "smooth_left_turn_duration", "hard_acceleration_count",
+                      "hard_acceleration_duration", "hard_braking_count",
+                      "hard_braking_duration", "hard_cornering_count",
+                      "hard_cornering_duration", "call_in_count",
+                      "call_in_duration", "call_out_count", "call_out_duration",
+                      "phone_manipulation_count", "phone_manipulation_duration",
+                      "displayed_speeding_count", "displayed_speeding_duration","displayed_speeding_15_count", "displayed_speeding_15_duration",
+                      "displayed_speeding_20_count", "displayed_speeding_20_duration"]
     result.sort_values(['driver_id', 'start_time'], inplace=True)
     return result
 
@@ -92,7 +95,7 @@ def processJSONFile(file):
     index = 0
     score = "None"
     if "scores" in trip_json:
-        score = "None" if not("rating" in trip_json["scores"][0]) else \
+        score = "None" if not ("rating" in trip_json["scores"][0]) else \
             trip_json["scores"][0]["score"]
     trips.loc[index] = [trip_json["driverId"], trip_json["tripId"], trip_json["startTimestamp"], score, []]
     index += 1
@@ -100,9 +103,7 @@ def processJSONFile(file):
                         "RIGHT_TURN", "LEFT_TURN", "SMOOTH_RIGHT_TURN", "SMOOTH_LEFT_TURN",
                         "HARD_ACCELERATION", "HARD_BRAKING", "HARD_CORNERING",
                         "CALL_INCOMING", "CALL_OUTGOING", "PHONE_MANIPULATION",
-                        "SPEEDING"]
-
-
+                        "SPEEDING","SPEEDING_15_MPH","SPEEDING_20_MPH"]
 
     result_index = 0
     for index in list(trips.index):

@@ -84,7 +84,7 @@ def checkDynamoDBProcess():
 def gettinginputs():
     try:
         print(
-            "Select your type.. (1-Mentor Business 2-Non-Armada 3-GEOTAB)")
+            "Select your type.. (1-Mentor Business 2-Non-Armada 3-GEOTAB 4-MentorV3)")
         selectionregressiontype = input("Selection:")
         if selectionregressiontype == "1":
             regressionType = RegressionTypeEnum.MentorBusiness
@@ -92,11 +92,13 @@ def gettinginputs():
             regressionType = RegressionTypeEnum.NonArmada
         elif selectionregressiontype == '3':
             regressionType = RegressionTypeEnum.GEOTAB
+        elif selectionregressiontype == '4':
+            regressionType = RegressionTypeEnum.MentorBusinessV3
         else:
             print("The selection is not valid!")
             exit()
 
-        if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.NonArmada:
+        if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.NonArmada or regressionType == RegressionTypeEnum.MentorBusinessV3:
             print(
                 "Select your process type.. (1-RegressionTest 2-UpdateBaseTripResults 3-UpdateMapBase)")
         elif regressionType == RegressionTypeEnum.GEOTAB:
@@ -112,25 +114,32 @@ def gettinginputs():
             jsonfilenameEnum = JSONfilenameEnum.base
 
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest or regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults:
-            threadsize = 16
+            threadsize = 8
         else:
-            threadsize = 16
+            threadsize = 8
 
         if regressionType == RegressionTypeEnum.MentorBusiness:
             print("Type your pool-size. (Options:1000, 10000, 20000, 50000, 100000)")
             poolsize = PoolSize(input("Selection:"))
-        elif regressionType == RegressionTypeEnum.NonArmada:
+        elif regressionType == RegressionTypeEnum.NonArmada or regressionType == RegressionTypeEnum.MentorBusinessV3:
             print("Type your pool-size. (Options:1000, 10000)")
             pool = input("Selection:")
-            if pool == '1000':
+
+            if pool == '1000' and regressionType == RegressionTypeEnum.NonArmada:
                 poolsize = PoolSize.POOL_NONARMADA_1000
-            elif pool == '10000':
+            elif pool == '10000' and regressionType == RegressionTypeEnum.NonArmada:
                 poolsize = PoolSize.POOL_NONARMADA_10000
+            elif pool == '1000' and regressionType == RegressionTypeEnum.MentorBusinessV3:
+                poolsize = PoolSize.POOL_MENTORV3_1000
+            elif pool == '10000' and regressionType == RegressionTypeEnum.MentorBusinessV3:
+                poolsize = PoolSize.POOL_MENTORV3_10000
             else:
                 print("invalid input!")
                 exit()
         elif regressionType == RegressionTypeEnum.GEOTAB:
             poolsize = PoolSize.POOL_GEOTAB
+        elif regressionType == RegressionTypeEnum.MentorBusinessV3:
+            poolsize = PoolSize.POOL_MENTORV3_10000
 
 
     except ValueError:
@@ -151,14 +160,14 @@ def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
 
     print("Copying config files!")
     if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-        if regressionType == RegressionTypeEnum.NonArmada:
+        if regressionType == RegressionTypeEnum.NonArmada or regressionType == RegressionTypeEnum.MentorBusinessV3:
             os.system(
                 "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/" + poolsize.value + "/config " + FOLDER_PATH + "build/telematics-server/")
         else:
             os.system(
                 "cp -rf " + FOLDER_PATH + "build/backupbaseconfigfolder/" + regressionType.value + "/config " + FOLDER_PATH + "build/telematics-server/")
     else:
-        if regressionType == RegressionTypeEnum.NonArmada:
+        if regressionType == RegressionTypeEnum.NonArmada or regressionType == RegressionTypeEnum.MentorBusinessV3:
             os.system(
                 "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/" + poolsize.value + "/config " + FOLDER_PATH + "build/telematics-server/")
         else:

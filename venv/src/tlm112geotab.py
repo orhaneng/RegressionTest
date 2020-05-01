@@ -18,7 +18,7 @@ import threading
 import datetime
 import logging
 
-threadcount = 16
+threadcount = 4
 
 
 def multi_run_wrapper(args):
@@ -195,7 +195,7 @@ def connectAurora(driver_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH, resultfilen
     if df_result.empty:
         df_result = df_result.append(
             {'driver_id': str(driver_id), 'trip_id': str(trip_id),
-             'file_name': "trip.301136058.1569767922746.bin_v2.gz",
+             'file_name': "default.bin_v2.gz",
              'expire_in_days': "365", 'start_time': str("1699760671328"),
              'end_time': str("1699760671328"), 's3_key': "default", 'created_at': "2019-09-29 06:38:39",
              'updated_at': " "},
@@ -302,7 +302,7 @@ def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfi
     # exampleList = pd.read_csv(
     #    FOLDER_PATH + RESULT_FILE_PATH + "/" + resultfilename + "dataafterprocess.csv")
     exampleList = pd.read_csv(
-        "/home/ec2-user/pmanalysis/" + weekstart + "_" + weekend + "/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocess.csv")
+        "/home/ec2-user/pmanalysis/2020-02-23_2020-02-29/2020-02-23_2020-02-29#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocess.csv")
     # exampleList = pd.read_csv(
     #    "/Users/omerorhan/Documents/EventDetection/pmanalysis/" + weekstart + "_" + weekend + "/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocess.csv")
 

@@ -30,7 +30,7 @@ def processMixedOrderedRawFiles():
 
 def processCSVtoGetS3key():
     import mysql.connector
-    exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/PMANALYSIS_TLM_112/data.csv",
+    exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3list10000.csv",
                               index_col=False)
     cnx = mysql.connector.connect(user='omer', password='3$@Wed#f%g67dfg34%gH2s8',
                                   host='prod-telematics-aurora-cluster.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
@@ -39,22 +39,25 @@ def processCSVtoGetS3key():
     df_result = pd.DataFrame(columns=['driver_id', 'trip_id', 's3_key'])
     result = "select driver_id, trip_id,s3_key from trip_file where "
     query = []
+    count = 0
     for i, row in exampleList.iterrows():
-        query.append("(driver_id = '" + str(row[1]) + "' and trip_id='" + str(row[0]) + "') or ")
-        # if i > 1000:
-        # print(i)
-    cursor.execute(result + "".join(query)[:-3])
-    for (driver_id, trip_id, s3key) in cursor:
-        df_result = df_result.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key},
-                                     ignore_index=True)
-        result = "select driver_id, trip_id,s3_key from trip_file where "
-        query = []
-    df_result.to_csv("/Users/omerorhan/Documents/EventDetection/PManalysis/weekly_trips_final.csv",
+        count= count +1
+        query.append("(driver_id = '" + str(row[0]) + "' and trip_id='" + str(row[1]) + "') or ")
+        if count % 1000 == 0 or len(exampleList) == count:
+            print(i)
+            cursor.execute(result + "".join(query)[:-3])
+            for (driver_id, trip_id, s3key) in cursor:
+                df_result = df_result.append({'driver_id': driver_id, 'trip_id': trip_id, 's3_key': s3key},
+                                             ignore_index=True)
+
+            result = "select driver_id, trip_id,s3_key from trip_file where "
+            query = []
+    df_result.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3S3KEYlist10000.csv",
                      index=False)
     cnx.close()
 
 
-# processCSVtoGetS3key()
+processCSVtoGetS3key()
 def divideDriversIntoPools():
     # PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
     PATH = "/home/ec2-user/regressiontest/"
@@ -220,8 +223,8 @@ def getsessionidindriver():
 
 # getsessionidindriver()
 
-def readfile():
 
+def readfile():
     filename = '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/backupconfigfolder/non-armada/config/data-service.properties'
     d = {}
     with open(filename) as f:
@@ -235,8 +238,27 @@ def readfile():
                 d[value] = ""
 
 
-readfile()
+# readfile()
 
+
+def gettripsbttrip():
+    data = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3.csv", index_col=False)
+    data = data.groupby('driver_id').head(5)
+    driverlist10000 = data['driver_id'].unique()[1:2010]
+    data10000 = data[data['driver_id'].isin(driverlist10000)]
+    print(len( data10000['driver_id'].unique()))
+    data10000.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3list10000.csv",
+                index=False)
+    driverlist1000 = data['driver_id'].unique()[1:210]
+    data1000 = data[data['driver_id'].isin(driverlist1000)]
+    print(len( data1000['driver_id'].unique()))
+    data1000.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3list1000.csv",
+                index=False)
+
+
+
+#gettripsbttrip()
 '''
 
 300423983	300423983-4d77a24858f64b2cac872960742cb1e2	trip.300423983.1568992956162.bin_v2.gz	365	1568992956160	1568994090538	300423983/4d77a24858f64b2cac872960742cb1e2_trip.300423983.1568992956162.bin_v2.gz	2019-09-20 08:41:36.0	

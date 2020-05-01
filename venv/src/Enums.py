@@ -2,6 +2,7 @@ from enum import Enum
 
 class RegressionTypeEnum(Enum):
     MentorBusiness = "mentorbusiness"
+    MentorBusinessV3 = "mentorbusinessv3"
     NonArmada = "non-armada"
     GEOTAB = "geotab"
     TLM112NONEGEOTAB = "tlm112-non-geotab"
@@ -22,6 +23,9 @@ class PoolSize(Enum):
     POOL_100000 = "100000"
     POOL_NONARMADA_1000="non-armada/1000"
     POOL_NONARMADA_10000 = "non-armada/10000"
+    POOL_MENTORV3_10000 = "mentorbusinessv3/10000"
+    POOL_MENTORV3_1000 = "mentorbusinessv3/1000"
+
     POOL_GEOTAB = "geotab"
 
 

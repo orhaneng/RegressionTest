@@ -88,8 +88,7 @@ def connectAurora(trip_id, driver_id):
     return s3list
 
 
-def processTripsNongeotab(exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename):
-
+def processCSVtoGetS3key(exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename,weekstart, weekend):
     print("non-geotab starts")
     print("thread count = " + str(threadcount))
     from datetime import datetime
@@ -125,10 +124,11 @@ def processTripsNongeotab(exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfile
     exampleList["PM_COUNT"] = ""
     exampleList["STATUS"] = ""
     exampleList["LOG"] = ""
-    exampleList = exampleList.drop(columns=['FOLDER_PATH','RESULT_FILE_PATH','resultfilename'])
+    exampleList = exampleList.drop(columns=['FOLDER_PATH', 'RESULT_FILE_PATH', 'resultfilename'])
     for item in result:
         exampleList.loc[
-            (exampleList['trip_id'] == item[1]) & (exampleList['driver_id'] == item[0]), ['PM_COUNT', 'STATUS','LOG']] = [
+            (exampleList['trip_id'] == item[1]) & (exampleList['driver_id'] == item[0]), ['PM_COUNT', 'STATUS',
+                                                                                          'LOG']] = [
             item[3], item[2], item[4]]
 
     exampleList.to_csv(FOLDER_PATH + RESULT_FILE_PATH + "/" + resultfilename + "dataafterprocess.csv")
@@ -180,7 +180,8 @@ def processDriver(driver_id, session_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH,
                 os.makedirs(FOLDER_PATH + RESULT_FILE_PATH + "json/" + str(driver_id), exist_ok=True)
             os.system("mv " + FOLDER_PATH + "jsonfiles/temp/" + str(driver_id) + "/trip." + str(driver_id) + "." + str(
                 trip_idserver) + ".json "
-                      + FOLDER_PATH + RESULT_FILE_PATH + "json/" + str(driver_id) + "/trip." + str(driver_id) + "." + str(
+                      + FOLDER_PATH + RESULT_FILE_PATH + "json/" + str(driver_id) + "/trip." + str(
+                driver_id) + "." + str(
                 trip_id) + ".json")
             if not os.listdir(FOLDER_PATH + "jsonfiles/temp/" + str(driver_id)):
                 os.system('rm -r ' + FOLDER_PATH + "jsonfiles/temp/" + str(driver_id))
@@ -203,7 +204,7 @@ def processDriver(driver_id, session_id, trip_id, FOLDER_PATH, RESULT_FILE_PATH,
     return log_row
 
 
-def copyFilesfromS3toRegressionServer(trip_id, driver_id, source, local_date,index, FOLDER_PATH, RESULT_FILE_PATH,
+def copyFilesfromS3toRegressionServer(indeks, trip_id, driver_id, source, local_date, index,count,status,log, FOLDER_PATH, RESULT_FILE_PATH,
                                       resultfilename):
     threadstart = datetime.datetime.now()
     log = [driver_id, trip_id, "", 0, ""]
@@ -219,11 +220,10 @@ def copyFilesfromS3toRegressionServer(trip_id, driver_id, source, local_date,ind
             os.putenv('s3list', s3listbyTripId[0])
         s3start = datetime.datetime.now()
 
-
         os.system(
-            "aws s3 cp s3://mentor.trips.production-365/" + str(driver_id) + " "+FOLDER_PATH+
-                                                                       "tripfiles/tlm112/" + str(driver_id) + " --recursive --exclude='*' --include='" + session_id + "*'")
-        #subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
+            "aws s3 cp s3://mentor.trips.production-365/" + str(driver_id) + " " + FOLDER_PATH +
+            "tripfiles/tlm112/" + str(driver_id) + " --recursive --exclude='*' --include='" + session_id + "*'")
+        # subprocess.call(FOLDER_PATH + 'pmanalysis_tlm_112/shell_script.sh')
         s3time = (datetime.datetime.now() - s3start).total_seconds()
 
         processDriverstart = datetime.datetime.now()
@@ -243,9 +243,11 @@ def copyFilesfromS3toRegressionServer(trip_id, driver_id, source, local_date,ind
         status = log[2]
         log[2] = status + str(e)
     finally:
-        threadtime = (datetime.datetime.now()-threadstart).total_seconds()
+        threadtime = (datetime.datetime.now() - threadstart).total_seconds()
         times = str(log[4])
-        log[4] = "THREADTIME=" +str(threadtime) +","+ times
-        logging.info("index="+str(index)+",driver_id="+str(driver_id)+",trip_id="+str(trip_id)+",status="+str(log[2])+",count="+str(log[3])+","+str(log[4]))
+        log[4] = "THREADTIME=" + str(threadtime) + "," + times
+        logging.info(
+            "index=" + str(index) + ",driver_id=" + str(driver_id) + ",trip_id=" + str(trip_id) + ",status=" + str(
+                log[2]) + ",count=" + str(log[3]) + "," + str(log[4]))
         return log
     return log

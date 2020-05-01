@@ -39,14 +39,14 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
                         input.append(
                             tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx,
                                    regressionProcessType, regressiontype)))
-                    elif regressiontype == RegressionTypeEnum.NonArmada:
+                    elif regressiontype == RegressionTypeEnum.NonArmada or regressiontype == RegressionTypeEnum.MentorBusinessV3:
                         sessionidlist.append(file_names[idx][jdx].split('_')[0])
                 if file_names[idx][jdx].endswith('.json'):
                     if regressiontype == RegressionTypeEnum.GEOTAB:
                         input.append(
                             tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx,
                                    regressionProcessType, regressiontype)))
-            if regressiontype == RegressionTypeEnum.NonArmada:
+            if regressiontype == RegressionTypeEnum.NonArmada or regressiontype == RegressionTypeEnum.MentorBusinessV3:
                 sessionidlist = list(set(sessionidlist))
                 for sessionid in sessionidlist:
                     input.append(
@@ -86,7 +86,7 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
             file_dir = batch_file_dir + driver_id + '/' + file_name
             upload_url = server_url + '/' + driver_id + '/trips'
             response = requests.post(upload_url, files={'uploadedfile': open(file_dir, 'rb')})
-        elif regressiontype == RegressionTypeEnum.NonArmada:
+        elif regressiontype == RegressionTypeEnum.NonArmada or regressiontype == RegressionTypeEnum.MentorBusinessV3:
             server_url = 'http://localhost:8080/api/v3/drivers/'
             timestamp = '{"time": ' + str(int(round(time.time() * 1000))) + '}'
             upload_url = server_url + str(driver_id) + '/trips/' + file_name
@@ -112,6 +112,7 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
         log_row = []
         if response.status_code == 200:
             response_json = json.loads(response.content)
+            #print(response_json)
             log_row.append(str(response_json.get('tripId')))
             if regressiontype == RegressionTypeEnum.MentorBusiness or regressiontype == RegressionTypeEnum.GEOTAB:
                 log_row.append(file_name)

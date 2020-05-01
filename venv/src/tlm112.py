@@ -13,9 +13,9 @@ from tlm112geotab import *
 from datetime import datetime
 
 # if platform.node() == 'dev-app-01-10-100-2-42.mentor.internal':
-FOLDER_PATH = "/home/ec2-user/regressiontest/"
+# FOLDER_PATH = "/home/ec2-user/regressiontest/"
 # else:
-#FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 
 '''
 weeks = {1: ['2020-02-23', '2020-02-23'],
@@ -65,8 +65,8 @@ weeks = {1: ['2019-10-06', '2019-10-12'],
 '''
 
 
-def startProcessNonGeotabFiles(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data):
-    processCSVtoGetS3key(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data)
+def startProcessNonGeotabFiles(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data, weekstart, weekend):
+    processCSVtoGetS3key(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data, weekstart, weekend)
 
 
 def startProcessGeotabFiles(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data, weekstart, weekend):
@@ -122,9 +122,9 @@ def connect2Redshift():
 def recover():
     FOLDER_PATH = "/home/ec2-user/regressiontest/"
 
-    #FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
+    # FOLDER_PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
 
-    source = "MENTOR_GEOTAB"
+    source = "MENTOR_NON_GEOTAB"
 
     weeks = {0: ['2019-09-29', '2019-10-05'],
              1: ['2019-10-06', '2019-10-12'],
@@ -148,16 +148,26 @@ def recover():
              19: ['2020-02-09', '2020-02-15'],
              20: ['2020-02-16', '2020-02-22'],
              21: ['2020-02-23', '2020-02-29'],
-             22: ['2020-03-01', '2020-03-07'],
-             23: ['2020-03-08', '2020-03-14'],
-             24: ['2020-03-15', '2020-03-21']}
-
+             22: ['2020-03-01', '2020-03-07']
+             }
+    weeks = {1: ['2020-03-01', '2020-03-01'],
+             2: ['2020-03-02', '2020-03-02'],
+             3: ['2020-03-03', '2020-03-03'],
+             4: ['2020-03-04', '2020-03-04'],
+             5: ['2020-03-05', '2020-03-05'],
+             6: ['2020-03-06', '2020-03-06'],
+             7: ['2020-03-07', '2020-03-07']
+             }
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S',
                         filename=FOLDER_PATH + "jsonfiles/" + datetime.now().strftime('%d-%m_%H-%M') + 'logger.log')
     urllib3_logger = logging.getLogger('urllib3')
     urllib3_logger.setLevel(logging.CRITICAL)
-    for i in range(0, 3):
+
+    df_result = pd.DataFrame(
+        columns=['week', 'driver_id', 'trip_id', 'source', 'local_date', 'STATUS'])
+    '''
+    for i in range(0, 23):
         weekstart = weeks.get(i)[0]
         weekend = weeks.get(i)[1]
         logging.info("week=" + str(weeks[i]) + ",source=" + source + " STARTED")
@@ -166,23 +176,80 @@ def recover():
         resultfilename = weekstart + "_" + weekend + "#" + source
         os.makedirs(FOLDER_PATH + RESULT_FILE_PATH, exist_ok=True)
         resultfilename = weekstart + "_" + weekend + "#" + source
+        # data = pd.read_csv(
+        #    "/home/ec2-user/pmanalysis/2020-03-01_2020-03-07/2020-03-01_2020-03-07#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocess.csv")
+
+        # data = pd.read_csv(
+        #    "/home/ec2-user/pmanalysis/" + weekstart + "_" + weekend+"/"+ weekstart + "_" + weekend + "#MENTOR_NON_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_NON_GEOTABdataafterprocess.csv")
+
         data = pd.read_csv(
-            "/home/ec2-user/pmanalysis/" +weekstart + "_" + weekend+"/"+ weekstart + "_" + weekend+"#MENTOR_GEOTAB/" + weekstart + "_" + weekend+"#MENTOR_GEOTABdataafterprocess.csv")
+            "/home/ec2-user/amz_reprocessing/pm/" + weekstart + "_" + weekend + "/" + weekstart + "_" + weekend + "#MENTOR_NON_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_NON_GEOTABdataafterprocess.csv",
+            index_col=False)
 
-        #data = pd.read_csv(
-        #    "/Users/omerorhan/Documents/EventDetection/pmanalysis/" + weekstart + "_" + weekend + "/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocess.csv")
+        data = data.drop(columns=['index', 'PM_COUNT', 'LOG'])
+        # data['FOLDER_PATH'] = FOLDER_PATH
+        # data['RESULT_FILE_PATH'] = RESULT_FILE_PATH
+        # data['resultfilename'] = resultfilename
+        data = data[(data['STATUS'] != 200) & (data['STATUS'] != '200') & (data['STATUS'] != 400) & (data['STATUS'] != '400')]
+        data['week'] = weekstart + "_" + weekend
 
-        data['FOLDER_PATH'] = FOLDER_PATH
-        data['RESULT_FILE_PATH'] = RESULT_FILE_PATH
-        data['resultfilename'] = resultfilename
-        data = data[(data['STATUS'] != '20  0') & (data['STATUS'] != 200)]
+        df_result = df_result.append(data)
+        # print(weekstart + "_" + weekend + " - ,total data 400," + str(
+        #    len(data[(data['STATUS'] == '400') | (data['STATUS'] == 400)])))
+        # print(weekstart + "_" + weekend + " - ,total data 500," + str(
+        #    len(data[(data['STATUS'] == '500') | (data['STATUS'] == 500)])))
         logging.info("total data=" + str(len(data)))
-        startProcessGeotabFiles(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data, weekstart, weekend)
+        # print(weekstart + "_" + weekend + " - total data=" + str(len(data)))
+        # startProcessNonGeotabFiles(data, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, weekstart, weekend)
+
+        # startProcessGeotabFiles(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data, weekstart, weekend)
         logging.info("week=" + str(weeks[i]) + ",source=" + source + "  FINISHED")
+        print("week=" + str(weeks[i]) + ",source=" + source + "  FINISHED")
+    '''
+    for i in range(1, 8):
+        weekstart = weeks.get(i)[0]
+        weekend = weeks.get(i)[1]
+        logging.info("week=" + str(weeks[i]) + ",source=" + source + " STARTED")
+
+        RESULT_FILE_PATH = "jsonfiles/" + weekstart + "_" + weekend + "#" + source + "/"
+        resultfilename = weekstart + "_" + weekend + "#" + source
+        os.makedirs(FOLDER_PATH + RESULT_FILE_PATH, exist_ok=True)
+        resultfilename = weekstart + "_" + weekend + "#" + source
+        # data = pd.read_csv(
+        #    "/home/ec2-user/pmanalysis/2020-03-01_2020-03-07/2020-03-01_2020-03-07#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocess.csv")
+
+        # data = pd.read_csv(
+        #    "/home/ec2-user/pmanalysis/" + weekstart + "_" + weekend+"/"+ weekstart + "_" + weekend + "#MENTOR_NON_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_NON_GEOTABdataafterprocess.csv")
+
+        data = pd.read_csv(
+            "/home/ec2-user/amz_reprocessing/pm/2020-03-01_2020-03-07/2020-03-01_2020-03-07#MENTOR_GEOTABfix/" + weekstart + "_" + weekend + "#MENTOR_GEOTAB/" + weekstart + "_" + weekend + "#MENTOR_GEOTABdataafterprocessfix.csv",
+            index_col=False)
+
+        data = data.drop(columns=['index', 'PM_COUNT','FOLDER_PATH','RESULT_FILE_PATH','resultfilename'])
+        # data['FOLDER_PATH'] = FOLDER_PATH
+        # data['RESULT_FILE_PATH'] = RESULT_FILE_PATH
+        # data['resultfilename'] = resultfilename
+        data = data[(data['STATUS'] != 200) & (data['STATUS'] != '200') & (data['STATUS'] != 400) & (data['STATUS'] != '400')]
+        data['week'] = weekstart + "_" + weekend
+
+        df_result = df_result.append(data)
+        # print(weekstart + "_" + weekend + " - ,total data 400," + str(
+        #    len(data[(data['STATUS'] == '400') | (data['STATUS'] == 400)])))
+        # print(weekstart + "_" + weekend + " - ,total data 500," + str(
+        #    len(data[(data['STATUS'] == '500') | (data['STATUS'] == 500)])))
+        logging.info("total data=" + str(len(data)))
+        # print(weekstart + "_" + weekend + " - total data=" + str(len(data)))
+        # startProcessNonGeotabFiles(data, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, weekstart, weekend)
+
+        # startProcessGeotabFiles(FOLDER_PATH, RESULT_FILE_PATH, resultfilename, data, weekstart, weekend)
+        logging.info("week=" + str(weeks[i]) + ",source=" + source + "  FINISHED")
+        print("week=" + str(weeks[i]) + ",source=" + source + "  FINISHED")
+    df_result['STATUS']='500'
+    df_result.to_csv("/home/ec2-user/trips500byday.csv", index=False)
 
 
-killoldtelematicsprocess()
-startTelematics(FOLDER_PATH)
+# killoldtelematicsprocess()
+# startTelematics(FOLDER_PATH)
 # connect2Redshift()
 recover()
 
@@ -258,3 +325,37 @@ weeks = {1: ['2019-10-06', '2019-10-12'],
          24: ['2020-03-15', '2020-03-21']}
 
 '''
+
+
+def getpmcounts500():
+    data = pd.read_csv("/Users/omerorhan/Documents/EventDetection/pmanalysis/nongeotabtrips.csv", index_col=False)
+    data = data[
+        (data['STATUS'] != 200) & (data['STATUS'] != '200') & (data['STATUS'] != 400) & (data['STATUS'] != '400')]
+
+    print("total data=",len(data))
+    countdata= 0
+    data["PMcount"] = ""
+    for index, row in data.iterrows():
+        count = ""
+        jsonurl = "http://prod-uploader-845833724.us-west-2.elb.amazonaws.com/api/v2/drivers/" + str(
+            row["driver_id"]) + "/trips/" + str(
+            row["trip_id"]) + ""
+        response_json = requests.get(jsonurl).content.decode(
+            "utf-8")
+        response_json = json.loads(response_json)
+        if 'eventCounts' in response_json:
+            count = "0"
+            for item in response_json['eventCounts']:
+                if item['behaviouralImpact'] == 'NEGATIVE':
+                    for eventitem in item['eventTypeCounts']:
+                        if eventitem['eventType'] == 'PHONE_MANIPULATION':
+                            count = str(eventitem['count'])
+                            break
+        countdata = countdata +1
+        print(str(countdata))
+
+        data.loc[(data['trip_id'] == row["trip_id"]) & (data['driver_id'] == int(row["driver_id"])), ['PMcount']] = count
+
+    data.to_csv("/Users/omerorhan/Documents/EventDetection/pmanalysis/nongeotabtrips500pmcount.csv")
+
+#getpmcounts500()
