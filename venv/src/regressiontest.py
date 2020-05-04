@@ -109,7 +109,8 @@ def gettinginputs():
         identicalJSONReport = None
         if regressionProcessType == RegressionProcessTypeEnum.RegressionTest:
             jsonfilenameEnum = JSONfilenameEnum.file
-            identicalJSONReport = IdenticalJSONReportEnum(input("Do you need an identical JSON comparision report? (Y/N) :").upper())
+            identicalJSONReport = IdenticalJSONReportEnum(
+                input("Do you need an identical JSON comparision report? (Y/N) :").upper())
         else:
             jsonfilenameEnum = JSONfilenameEnum.base
 
@@ -159,6 +160,11 @@ def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
         exit()
 
     print("Copying config files!")
+
+    os.system(
+        "cp -rf " + FOLDER_PATH + "build/config " + FOLDER_PATH + "build/telematics-server/")
+
+    '''
     if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         if regressionType == RegressionTypeEnum.NonArmada or regressionType == RegressionTypeEnum.MentorBusinessV3:
             os.system(
@@ -173,6 +179,54 @@ def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
         else:
             os.system(
                 "cp -rf " + FOLDER_PATH + "build/backupconfigfolder/" + regressionType.value + "/config " + FOLDER_PATH + "build/telematics-server/")
+
+    '''
+    filename = FOLDER_PATH + "build/config/data-service.properties"
+    dataserviceproperties = {}
+    with open(filename) as f:
+        for line in f:
+            values = line.split('=')
+            if len(values) > 1:
+                key, value = line.split('=')
+                dataserviceproperties[key] = value
+            if len(values) < 2:
+                value = line.split('=')
+    
+    data = ""
+    for key, value in dataserviceproperties.items():
+        if key == 'file.bucket':
+            value = FOLDER_PATH + "tripfiles/" + poolsize.value+"\n"
+        data = data + key + "=" + value
+
+    myfile = open(FOLDER_PATH + "build/telematics-server/config/data-service.properties", 'w')
+    myfile.writelines(data)
+    myfile.close()
+
+    filename = FOLDER_PATH + "build/config/map-service.properties"
+    dataserviceproperties = {}
+    with open(filename) as f:
+        for line in f:
+            values = line.split('=')
+            if len(values) == 2:
+                key, value = line.split('=')
+            if len(values) > 2:
+                key = values[0]
+                value = line.replace(values[0] + "=", '')
+            dataserviceproperties[key] = value
+
+    data = ""
+    for key, value in dataserviceproperties.items():
+        if key == 'regression.is_recording':
+            if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
+                value = "true\n"
+            else:
+                value= "false\n"
+        data = data + key + "=" + value
+
+    myfile = open(FOLDER_PATH + "build/telematics-server/config/map-service.properties", 'w')
+    myfile.writelines(data)
+    myfile.close()
+
     return FOLDER_PATH
 
 
@@ -237,7 +291,8 @@ def startregressiontest():
         combinedresult_s3key.sort_values(["driver_id", "s3_key", ], inplace=True)
         combinedresult_s3key.to_csv(FOLDER_PATH + "tripresults/" + poolsize.value + "/trip_results" + version + ".csv",
                                     index=False)
-        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType, threadsize, identicalJSONReport)
+        comparisionpath = compareTrips(FOLDER_PATH, poolsize.value, version, regressionType, threadsize,
+                                       identicalJSONReport)
         print("Your report is ready! Check the reports folder!")
         print(comparisionpath)
 

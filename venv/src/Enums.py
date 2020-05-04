@@ -25,7 +25,6 @@ class PoolSize(Enum):
     POOL_NONARMADA_10000 = "non-armada/10000"
     POOL_MENTORV3_10000 = "mentorbusinessv3/10000"
     POOL_MENTORV3_1000 = "mentorbusinessv3/1000"
-
     POOL_GEOTAB = "geotab"
 
 

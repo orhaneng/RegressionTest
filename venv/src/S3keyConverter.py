@@ -57,7 +57,7 @@ def processCSVtoGetS3key():
     cnx.close()
 
 
-processCSVtoGetS3key()
+#processCSVtoGetS3key()
 def divideDriversIntoPools():
     # PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
     PATH = "/home/ec2-user/regressiontest/"
@@ -225,7 +225,8 @@ def getsessionidindriver():
 
 
 def readfile():
-    filename = '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/backupconfigfolder/non-armada/config/data-service.properties'
+    '''
+    filename = '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/backupconfigfolder/non-armada/1000/config/data-service.properties'
     d = {}
     with open(filename) as f:
         for line in f:
@@ -235,10 +236,24 @@ def readfile():
                 d[key] = value
             if len(values) < 2:
                 value = line.split('=')
-                d[value] = ""
+                #d[value] = ""
+    print(d)
+    '''
+    dataserviceproperties = {'file.is_enabled': 'true\n', '#file.datasource': 's3\n', '#file.bucket': 'mentor.trips.dev\n', 'file.datasource': 'local\n', 'file.bucket': '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripfiles/mentorbusinessv3/1000\n', 'trip.is_enabled': 'true\n', 'trip.datasource': 'local\n', '#trip.dynamo.local_url': '\n', 'trip.dynamo.local_url': 'http://localhost:8000\n', 'trip.dynamo.table_prefix': '\n', 'trip.json.local_url': '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/jsonfiles/temp\n', 'driver.is_enabled': 'false\n', 'driver.datasource': 'aurora\n', 'group_scores.is_enabled': 'false\n', 'group_scores.datasource': 'dynamo\n', 'group_scores.dynamo.local_url': '\n', '# group_scores.dynamo.table_prefix': 'development\n'}
+
+    data = ""
+    for key,value in d.items():
+        data = data +key +"="+ value
+        if key == 'file.bucket':
 
 
-# readfile()
+    print(data)
+    myfile = open('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/backupconfigfolder/mentorbusinessv3/1000/config/data-service2.properties', 'w')
+    myfile.writelines(data)
+    myfile.close()
+
+
+readfile()
 
 
 def gettripsbttrip():
