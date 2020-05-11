@@ -227,6 +227,29 @@ def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
     myfile.writelines(data)
     myfile.close()
 
+    if regressionType == RegressionTypeEnum.MentorBusinessV3:
+        filename = FOLDER_PATH + "build/config/pairing.properties"
+        dataserviceproperties = {}
+        with open(filename) as f:
+            for line in f:
+                values = line.split('=')
+                if len(values) > 1:
+                    key, value = line.split('=')
+                    dataserviceproperties[key] = value
+                if len(values) < 2:
+                    value = line.split('=')
+
+        data = ""
+        for key, value in dataserviceproperties.items():
+            if key == 'default_source':
+                value = "MENTOR\n"
+            data = data + key + "=" + value
+
+        myfile = open(FOLDER_PATH + "build/telematics-server/config/pairing.properties", 'w')
+        myfile.writelines(data)
+        myfile.close()
+
+
     return FOLDER_PATH
 
 

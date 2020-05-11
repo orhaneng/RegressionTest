@@ -24,7 +24,7 @@ def compareTrips(path, poolsize, version, regressionType, threadsize, identicalj
     df2 = pd.read_csv(
         path + "tripresults/" + poolsize + "/" + checkfolder(path + "tripresults/" + poolsize),
         index_col=False)
-    if regressionType == RegressionTypeEnum.MentorBusiness:
+    if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.GEOTAB:
         df1.drop(df1.columns[0], axis=1, inplace=True)
         df2.drop(df2.columns[0], axis=1, inplace=True)
     compare = Compare(

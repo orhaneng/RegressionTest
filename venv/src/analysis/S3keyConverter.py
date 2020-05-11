@@ -376,3 +376,238 @@ local_date < '2020-04-01'
 
 
 '''
+'''
+              
+
+select source,date,event_id,events_per_100Miles from
+(
+SELECT total.source,
+       total.local_date date,
+       'SMOOTH_START' as event_id,
+       NVL(( pm.eventcount / ( total.totaldistance * 0.000621371 ) ) * 100,0)
+                        events_per_100Miles
+FROM   (SELECT t.source,
+               t.local_date,
+               Count(*) AS eventCount
+        FROM   trips t
+               JOIN trip_events e
+                 ON t.trip_id = e.trip_id
+        WHERE  t.status = 'SUCCESS'
+               AND t.is_driver = 'true'
+               AND t.is_personal = 'false'
+               AND t.is_disputed = 'false'
+               AND t.source = 'MENTOR'
+               AND t.local_date > '2020-04-15' and t.local_date < '2020-05-08'
+               --AND e.event_id IN( 'PHONE_MANIPULATION','HARD_CORNERING','HARD_BRAKING','SPEEDING','HARD_ACCELERATION' )
+               AND e.event_id IN( 'SMOOTH_START')
+        GROUP  BY t.source,
+                  t.local_date,
+                  event_id
+        ORDER  BY t.source,
+                  t.local_date,
+                  event_id DESC) pm
+       RIGHT JOIN (SELECT t.source,
+                          t.local_date,
+                          Sum(t.distance) totaldistance,
+                          0               AS eventCount
+                   FROM   trips t
+                   WHERE  t.status = 'SUCCESS'
+                          AND t.is_driver = 'true'
+                          AND t.is_personal = 'false'
+                          AND t.is_disputed = 'false'
+               AND t.source = 'MENTOR'
+               AND t.local_date > '2020-04-15' and t.local_date < '2020-05-08'
+                   GROUP  BY t.source,
+                             t.local_date
+                   ORDER  BY t.source,
+                             t.local_date DESC) total
+               ON total.source = pm.source
+                  AND total.local_date = pm.local_date
+ORDER  BY total.source,
+          total.local_date DESC)
+UNION (SELECT total.source,
+       total.local_date date,
+       'SMOOTH_STOP' as event_id,
+       NVL(( pm.eventcount / ( total.totaldistance * 0.000621371 ) ) * 100,0)
+                        events_per_100Miles
+FROM   (SELECT t.source,
+               t.local_date,
+               Count(*) AS eventCount
+        FROM   trips t
+               JOIN trip_events e
+                 ON t.trip_id = e.trip_id
+        WHERE  t.status = 'SUCCESS'
+               AND t.is_driver = 'true'
+               AND t.is_personal = 'false'
+               AND t.is_disputed = 'false'
+               AND t.source = 'MENTOR'
+               AND t.local_date > '2020-04-15' and t.local_date < '2020-05-08'
+               --AND e.event_id IN( 'PHONE_MANIPULATION','HARD_CORNERING','HARD_BRAKING','SPEEDING','HARD_ACCELERATION' )
+               AND e.event_id IN( 'SMOOTH_STOP')
+        GROUP  BY t.source,
+                  t.local_date,
+                  event_id
+        ORDER  BY t.source,
+                  t.local_date,
+                  event_id DESC) pm
+       RIGHT JOIN (SELECT t.source,
+                          t.local_date,
+                          Sum(t.distance) totaldistance,
+                          0               AS eventCount
+                   FROM   trips t
+                   WHERE  t.status = 'SUCCESS'
+                          AND t.is_driver = 'true'
+                          AND t.is_personal = 'false'
+                          AND t.is_disputed = 'false'
+               AND t.source = 'MENTOR'
+               AND t.local_date > '2020-04-24' and t.local_date < '2020-05-03'
+                   GROUP  BY t.source,
+                             t.local_date
+                   ORDER  BY t.source,
+                             t.local_date DESC) total
+               ON total.source = pm.source
+                  AND total.local_date = pm.local_date
+ORDER  BY total.source,
+          total.local_date DESC)   
+
+UNION
+(SELECT total.source,
+       total.local_date date,
+       'SMOOTH_LEFT_TURN' as event_id,
+       NVL(( pm.eventcount / ( total.totaldistance * 0.000621371 ) ) * 100,0)
+                        events_per_100Miles
+FROM   (SELECT t.source,
+               t.local_date,
+               Count(*) AS eventCount
+        FROM   trips t
+               JOIN trip_events e
+                 ON t.trip_id = e.trip_id
+        WHERE  t.status = 'SUCCESS'
+               AND t.is_driver = 'true'
+               AND t.is_personal = 'false'
+               AND t.is_disputed = 'false'
+               AND t.source = 'MENTOR'
+               AND t.local_date > '2020-04-15' and t.local_date < '2020-05-08'
+               --AND e.event_id IN( 'PHONE_MANIPULATION','HARD_CORNERING','HARD_BRAKING','SPEEDING','HARD_ACCELERATION' )
+               AND e.event_id IN( 'SMOOTH_LEFT_TURN')
+       GROUP  BY t.source,
+                  t.local_date,
+                  event_id
+        ORDER  BY t.source,
+                  t.local_date,
+                  event_id DESC) pm
+       RIGHT JOIN (SELECT t.source,
+                          t.local_date,
+                          Sum(t.distance) totaldistance,
+                          0               AS eventCount
+                   FROM   trips t
+                   WHERE  t.status = 'SUCCESS'
+                          AND t.is_driver = 'true'
+                          AND t.is_personal = 'false'
+                          AND t.is_disputed = 'false'
+               AND t.source = 'MENTOR'
+               AND t.local_date > '2020-04-15' and t.local_date < '2020-05-08'
+                   GROUP  BY t.source,
+                             t.local_date
+                   ORDER  BY t.source,
+                             t.local_date DESC) total
+               ON total.source = pm.source
+                  AND total.local_date = pm.local_date
+ORDER  BY total.source,
+          total.local_date DESC)
+UNION
+(SELECT total.source,
+       total.local_date date,
+       'SMOOTH_RIGHT_TURN' as event_id,
+       NVL(( pm.eventcount / ( total.totaldistance * 0.000621371 ) ) * 100,0)
+                        events_per_100Miles
+FROM   (SELECT t.source,
+               t.local_date,
+               Count(*) AS eventCount
+        FROM   trips t
+               JOIN trip_events e
+                 ON t.trip_id = e.trip_id
+        WHERE  t.status = 'SUCCESS'
+               AND t.is_driver = 'true'
+               AND t.is_personal = 'false'
+               AND t.is_disputed = 'false'
+               AND t.source = 'MENTOR'
+               AND t.local_date > '2020-04-15' and t.local_date < '2020-05-08'
+               --AND e.event_id IN( 'PHONE_MANIPULATION','HARD_CORNERING','HARD_BRAKING','SPEEDING','HARD_ACCELERATION' )
+               AND e.event_id IN( 'SMOOTH_RIGHT_TURN')
+        GROUP  BY t.source,
+                  t.local_date,
+                  event_id
+        ORDER  BY t.source,
+                  t.local_date,
+                  event_id DESC) pm
+       RIGHT JOIN (SELECT t.source,
+                          t.local_date,
+                          Sum(t.distance) totaldistance,
+                          0               AS eventCount
+                   FROM   trips t
+                   WHERE  t.status = 'SUCCESS'
+                          AND t.is_driver = 'true'
+                          AND t.is_personal = 'false'
+                          AND t.is_disputed = 'false'
+               AND t.source = 'MENTOR'
+               AND t.local_date > '2020-04-15' and t.local_date < '2020-05-08'
+                   GROUP  BY t.source,
+                             t.local_date
+                   ORDER  BY t.source,
+                             t.local_date DESC) total
+               ON total.source = pm.source
+                  AND total.local_date = pm.local_date
+ORDER  BY total.source,
+          total.local_date DESC)
+ 
+UNION
+(SELECT total.source,
+       total.local_date date,
+       'HARD_ACCELERATION' as event_id,
+       NVL(( pm.eventcount / ( total.totaldistance * 0.000621371 ) ) * 100,0)
+                        events_per_100Miles
+FROM   (SELECT t.source,
+               t.local_date,
+               Count(*) AS eventCount
+        FROM   trips t
+               JOIN trip_events e
+                 ON t.trip_id = e.trip_id
+        WHERE  t.status = 'SUCCESS'
+               AND t.is_driver = 'true'
+               AND t.is_personal = 'false'
+               AND t.is_disputed = 'false'
+               AND t.local_date > current_date - 365
+               AND t.local_date < current_date
+               --AND e.event_id IN( 'PHONE_MANIPULATION','HARD_CORNERING','HARD_BRAKING','SPEEDING','HARD_ACCELERATION' )
+               AND e.event_id IN( 'HARD_ACCELERATION')
+        GROUP  BY t.source,
+                  t.local_date,
+                  event_id
+        ORDER  BY t.source,
+                  t.local_date,
+                  event_id DESC) pm
+       RIGHT JOIN (SELECT t.source,
+                          t.local_date,
+                          Sum(t.distance) totaldistance,
+                          0               AS eventCount
+                   FROM   trips t
+                   WHERE  t.status = 'SUCCESS'
+                          AND t.is_driver = 'true'
+                          AND t.is_personal = 'false'
+                          AND t.is_disputed = 'false'
+                          AND t.local_date > current_date - 365
+                          AND t.local_date < current_date
+                   GROUP  BY t.source,
+                             t.local_date
+                   ORDER  BY t.source,
+                             t.local_date DESC) total
+               ON total.source = pm.source
+                  AND total.local_date = pm.local_date
+ORDER  BY total.source,
+          total.local_date DESC)
+
+
+
+
+'''
