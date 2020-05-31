@@ -1,5 +1,5 @@
 from src.telematicsmultiprocess import uploadTripFilesandProcess
-from src.get_trip_from_regression_json import getTripsFromRegressionServer
+from src.readJSONs import getTripsFromRegressionServer
 from src.comparision import compareTrips
 from src.comparision import checkfolder
 from src.changejsonfilename import changefilenames

@@ -40,7 +40,7 @@ def getTripsFromRegressionServer(path, threadsize):
         pool.join()
         exit()
     result = pd.DataFrame(comparisonresult)
-    result.columns = ["trip_id", "driver_id", "start_time", "score",
+    result.columns = ["trip_id", "driver_id", "start_time", "score","distance",
                       "stop_count", "stop_duration",
                       "start_count", "start_duration", "smooth_stop_count",
                       "smooth_stop_duration", "smooth_accel_count",
@@ -91,13 +91,16 @@ def processJSONFile(file):
                 event_dict[e_name] = [0, 0]
             event_dict[e_name][0] += 1
             event_dict[e_name][1] += duration
-    trips = pd.DataFrame(columns=["driver_id", "trip_id", "start_time", "score", "events"])
+    trips = pd.DataFrame(columns=["driver_id", "trip_id", "start_time", "score", "distance" , "events"])
     index = 0
     score = "None"
     if "scores" in trip_json:
         score = "None" if not ("rating" in trip_json["scores"][0]) else \
             trip_json["scores"][0]["score"]
-    trips.loc[index] = [trip_json["driverId"], trip_json["tripId"], trip_json["startTimestamp"], score, []]
+    distance = "None"
+    if "distance" in trip_json:
+        distance = trip_json["distance"]
+    trips.loc[index] = [trip_json["driverId"], trip_json["tripId"], trip_json["startTimestamp"], score, trip_json["distance"], []]
     index += 1
     event_definition = ["STOP", "START", "SMOOTH_STOP", "SMOOTH_START",
                         "RIGHT_TURN", "LEFT_TURN", "SMOOTH_RIGHT_TURN", "SMOOTH_LEFT_TURN",
@@ -115,6 +118,8 @@ def processJSONFile(file):
             microseconds=trips.loc[index, "start_time"]["nanos"] / 1000)).isoformat(timespec='milliseconds')
         row.append(e_start)
         row.append(trips.loc[index, "score"])
+        row.append(trips.loc[index, "distance"])
+
         for definition in event_definition:
             if event_dict != None and event_dict.get(definition) != None:
                 row.append(event_dict.get(definition)[0])

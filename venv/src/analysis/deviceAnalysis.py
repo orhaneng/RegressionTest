@@ -13,9 +13,13 @@ def multi_run_wrapper(args):
     return multipool(*args)
 
 
-def multipool(driver_id, local_date, source, trip_id):
+def multipool(driver_id, local_date, source, trip_id, distance, pmcount):
     flag = False
-    new_row = None
+    new_row = [driver_id, trip_id, local_date,
+               source,
+               "",
+               "", "",
+               "", distance, pmcount]
     if source == 'MENTOR_GEOTAB':
         con = mysql.connector.connect(user='omer', password='3$@Wed#f%g67dfg34%gH2s8',
                                       host='prod-dvir-aurora-cluster.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
@@ -26,7 +30,7 @@ def multipool(driver_id, local_date, source, trip_id):
             driver_id) + "' and active_from between '" + local_date + "' and '" + str(
             thedayafter) + "' ) "
         cur.execute(query)
-        new_row = None
+
         if cur.rowcount == 0:
             query = "select session_id from amzl_geotab.user_device_pairs_bak where (user_id = '" + str(
                 driver_id) + "' and active_from between '" + local_date + "' and '" + str(
@@ -49,11 +53,11 @@ def multipool(driver_id, local_date, source, trip_id):
                 if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
                     elasticrow = item.get("_source")
                     flag = True
-                    new_row = {'driver_id': driver_id, 'trip_id': trip_id, 'local_date': local_date,
-                               'source': source,
-                               'session_id': str(session_id[0]),
-                               'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
-                               'platform': elasticrow.get('platform')}
+                    new_row = [driver_id, trip_id, local_date,
+                               source,
+                               str(session_id[0]),
+                               elasticrow.get('appVersion'), elasticrow.get('device'),
+                               elasticrow.get('platform'), distance, pmcount]
                     con.close()
                     break
         con.close()
@@ -74,11 +78,11 @@ def multipool(driver_id, local_date, source, trip_id):
             if item.get("_source").get("platform") != "AWS Lambda" and len(item.get("_source")) != 0:
                 elasticrow = item.get("_source")
                 flag = True
-                new_row = {'driver_id': driver_id, 'trip_id': trip_id, 'local_date': local_date,
-                           'source': source,
-                           'session_id': str(session_id),
-                           'appVersion': elasticrow.get('appVersion'), 'device': elasticrow.get('device'),
-                           'platform': elasticrow.get('platform')}
+                new_row = [driver_id, trip_id, local_date,
+                           source,
+                           str(session_id),
+                           elasticrow.get('appVersion'), elasticrow.get('device'),
+                           elasticrow.get('platform'), distance, pmcount]
                 break
     return new_row
 
@@ -100,40 +104,43 @@ def connectRedshift():
 
 
 def connectAurora():
-    dataframe = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/redshift.csv")
+    #dataframe = pd.read_csv("/home/ec2-user/analysis/eventcountlist2days.csv")
+    dataframe = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/new_analysis/eventcountlist2days.csv")
+
     result = pd.DataFrame(
-        columns=['driver_id', 'trip_id', 'local_date', 'source'])
+        columns=['driver_id', 'trip_id', 'local_date', 'source', 'session_id', 'appVersion', 'device', 'platform',
+                 'distance', 'manipu_count'])
 
     # for index, row in dataframe.iterrows():
-    pool = Pool(6)
+    pool = Pool(20)
 
     input = []
     for index, row in dataframe.iterrows():
-        if index > 50000:
-            break
         input.append(
-            tuple((row['driver_id'], row['local_date'], row['source'], row['trip_id'])))
+            tuple((row['driver_id'], row['local_date'], row['source'], row['trip_id'], row['distance'],
+                   row['manipu_count'])))
 
     try:
         with pool as p:
             item = list(tqdm.tqdm(p.imap(multi_run_wrapper, input), total=len(input)))
-            if item != None:
-                for row in item:
-                    result = result.append(row, ignore_index=True)
-
-
-
+            result = pd.DataFrame(item,
+                                  columns=['driver_id', 'trip_id', 'local_date', 'source', 'session_id', 'appVersion',
+                                           'device',
+                                           'platform',
+                                           'distance', 'manipu_count'])
     except Exception as e:
         print(e)
         pool.terminate()
         pool.join()
         exit()
-    result.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final.csv")
-    print(result)
+    #result.to_csv("/home/ec2-user/analysis/final.csv")
+    result.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/new_analysis/final.csv")
+    # print(result)
 
 
 # connectRedshift()
-# connectAurora()
+#connectAurora()
 
 
 def mergefiles():
@@ -206,15 +213,18 @@ def tripresultsanalysis():
     tripresult = pd.read_csv(
         "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripresults/trip_results3.3.19.5_afterfix.csv")
     tripresult = tripresult.groupby(['driver_id'])[
-              'displayed_speeding_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count','hard_cornering_count'].agg(
+        'displayed_speeding_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count', 'hard_cornering_count'].agg(
         'sum')
 
-    driver_score = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripresults/driver_score.csv")
-    driverlist = pd.merge(driver_score,tripresult, on='driver_id')
+    driver_score = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripresults/driver_score.csv")
+    driverlist = pd.merge(driver_score, tripresult, on='driver_id')
     print(driverlist)
-    driverlist.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripresults/driver_list.csv")
+    driverlist.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripresults/driver_list.csv")
 
-tripresultsanalysis()
+
+# tripresultsanalysis()
 '''
 select t.driver_id, t.local_date,t.source, t.trip_id,s.score, count(*) from trips t join trip_scores s on s.trip_id=t.trip_id  left join trip_events e on t.trip_id = e.trip_id  where 
  t.source in ('MENTOR_NON_GEOTAB', 'MENTOR_GEOTAB') and t.local_date >= '2019-11-04' and t.local_date < '2019-11-10' and t.status='SUCCESS' 
@@ -247,3 +257,55 @@ order by pm.source, pm.local_date desc
 
 
 '''
+
+
+def mergedata():
+    devicesdata = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/final_all.csv")
+    pmcount = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/redshiftwithdistance.csv")
+
+    data_non_geotab = \
+        devicesdata[
+            (devicesdata['device'] == 'BullittGroupLimited S41') & (devicesdata['source'] == 'MENTOR_NON_GEOTAB')][
+            'trip_id'].values.tolist()
+
+    pmcoountavg_non_geotab = pmcount[pmcount.trip_id.isin(data_non_geotab)]
+    # pmcoountavg_non_geotab['device'] = 'BullittGroupLimited S41'
+
+    pmcoountavg_non_geotab_total_distance = pmcoountavg_non_geotab['distance'].sum() * 0.000621371
+    pmcoountavg_non_geotab_total_pm = pmcoountavg_non_geotab['manipu_count'].sum()
+    # print("nongeotab count per 100mile="+ str(pmcoountavg_non_geotab_total_pm*100 / pmcoountavg_non_geotab_total_distance))
+
+    data_geotab = \
+        devicesdata[(devicesdata['device'] == 'BullittGroupLimited S41') & (devicesdata['source'] == 'MENTOR_GEOTAB')][
+            'trip_id'].values.tolist()
+    pmcoountavg_geotab = pmcount[pmcount.trip_id.isin(data_geotab)]
+    # pmcoountavg_geotab['device'] = 'BullittGroupLimited S41'
+
+    data_geotab_totaldistance = pmcoountavg_geotab['distance'].sum() * 0.000621371
+    pmcoountavg_geotab_total_pm = pmcoountavg_geotab['manipu_count'].sum()
+    # print("geotab count per 100mile="+ str(pmcoountavg_geotab_total_pm*100 / data_geotab_totaldistance))
+
+    allfiles = pd.concat([pmcoountavg_non_geotab, pmcoountavg_geotab])
+    allfiles.to_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/analysis/S41trips.csv")
+    print()
+
+
+def analysis():
+    devicesdata = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/new_analysis/final.csv")
+    data_non_geotab = \
+        devicesdata[
+            (devicesdata['device'] == 'BullittGroupLimited S41') & (devicesdata['source'] == 'MENTOR_NON_GEOTAB')]
+    pmcoountavg_non_geotab_total_distance = data_non_geotab['distance'].sum() * 0.000621371
+    pmcoountavg_non_geotab_total_pm = data_non_geotab['manipu_count'].sum()
+    print("nongeotab=" + str((pmcoountavg_non_geotab_total_pm*100)/pmcoountavg_non_geotab_total_distance))
+
+    devicesdata = pd.read_csv("/Users/omerorhan/Documents/EventDetection/JIRA/JIRA-486/new_analysis/final.csv")
+    data_geotab = \
+        devicesdata[
+            (devicesdata['device'] == 'BullittGroupLimited S41') & (devicesdata['source'] == 'MENTOR_GEOTAB')]
+    pmcoountavg_geotab_total_distance = data_geotab['distance'].sum() * 0.000621371
+    pmcoountavg_geotab_total_pm = data_geotab['manipu_count'].sum()
+    print("geotab=" + str((pmcoountavg_geotab_total_pm*100)/pmcoountavg_geotab_total_distance))
+
+
+analysis()

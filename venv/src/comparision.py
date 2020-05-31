@@ -1,5 +1,5 @@
 from src.datacompy.core import *
-from src.jsoncomparision import checktwoJSONfiles
+from src.identicalJsonComparision import checktwoJSONfiles
 from multiprocessing import Pool
 import tqdm
 import os.path
@@ -87,11 +87,11 @@ def driverScoreComparision(writer, df1, df2):
     df_final = df_final.style.apply(highlight_diff, axis=None)
 
     events1 = df1.groupby(['driver_id'], as_index=False)[
-        'displayed_speeding_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count', 'hard_cornering_count'].agg(
+        'displayed_speeding_count', 'displayed_speeding_15_count', 'displayed_speeding_20_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count', 'hard_cornering_count'].agg(
         'sum')
 
     events2 = df2.groupby(['driver_id'], as_index=False)[
-        'displayed_speeding_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count', 'hard_cornering_count'].agg(
+        'displayed_speeding_count', 'displayed_speeding_15_count', 'displayed_speeding_20_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count', 'hard_cornering_count'].agg(
         'sum')
     df_event_comp = pd.DataFrame(columns=['driver_id', 'speeding_old', 'speeding_new', 'hard_braking_old',
                                           'hard_braking_new', 'hard_acceleration_old', 'hard_acceleration_new',
@@ -101,6 +101,10 @@ def driverScoreComparision(writer, df1, df2):
     df_event_comp['driver_id'] = events1['driver_id']
     df_event_comp['speeding_old'] = events1['displayed_speeding_count']
     df_event_comp['speeding_new'] = events2['displayed_speeding_count']
+    df_event_comp['speeding_15_old'] = events1['displayed_speeding_15_count']
+    df_event_comp['speeding_15_new'] = events2['displayed_speeding_15_count']
+    df_event_comp['speeding_20_old'] = events1['displayed_speeding_20_count']
+    df_event_comp['speeding_20_new'] = events2['displayed_speeding_20_count']
     df_event_comp['hard_braking_old'] = events1['hard_braking_count']
     df_event_comp['hard_braking_new'] = events2['hard_braking_count']
     df_event_comp['hard_acceleration_old'] = events1['hard_acceleration_count']
@@ -192,5 +196,5 @@ def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
     print("Files are ", "identical" if isallfilesidentical else "not identical")
     return writer
 
-#compareTrips(path, poolsize, version, regressionType, threadsize, identicaljsonreport):
-#compareTrips("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/",PoolSize.POOL_1000.value,'3.3.19.5',RegressionTypeEnum.MentorBusiness,4, IdenticalJSONReportEnum.No)
+# compareTrips(path, poolsize, version, regressionType, threadsize, identicaljsonreport):
+# compareTrips("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/",PoolSize.POOL_1000.value,'3.3.19.5',RegressionTypeEnum.MentorBusiness,4, IdenticalJSONReportEnum.No)

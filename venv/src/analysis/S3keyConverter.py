@@ -4,6 +4,9 @@ os.system("source activate base")
 import pandas as pd
 import shutil
 
+from multiprocessing import Pool
+import tqdm
+
 
 def processMixedOrderedRawFiles():
     # source_folder_path = "/Users/omerorhan/Documents/EventDetection/regression_server/raw/"
@@ -30,8 +33,9 @@ def processMixedOrderedRawFiles():
 
 def processCSVtoGetS3key():
     import mysql.connector
-    exampleList = pd.read_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3list10000.csv",
-                              index_col=False)
+    exampleList = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/new_pool_non_geotab/trips_10.csv",
+        index_col=False)
     cnx = mysql.connector.connect(user='omer', password='3$@Wed#f%g67dfg34%gH2s8',
                                   host='prod-telematics-aurora-cluster.cluster-ro-cikfoxuzuwyj.us-west-2.rds.amazonaws.com',
                                   database='telematics')
@@ -41,7 +45,7 @@ def processCSVtoGetS3key():
     query = []
     count = 0
     for i, row in exampleList.iterrows():
-        count= count +1
+        count = count + 1
         query.append("(driver_id = '" + str(row[0]) + "' and trip_id='" + str(row[1]) + "') or ")
         if count % 1000 == 0 or len(exampleList) == count:
             print(i)
@@ -52,12 +56,13 @@ def processCSVtoGetS3key():
 
             result = "select driver_id, trip_id,s3_key from trip_file where "
             query = []
-    df_result.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3S3KEYlist10000.csv",
-                     index=False)
+    df_result.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/new_pool_non_geotab/trips_10_s3keys.csv",
+        index=False)
     cnx.close()
 
 
-#processCSVtoGetS3key()
+# processCSVtoGetS3key()
 def divideDriversIntoPools():
     # PATH = "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/"
     PATH = "/home/ec2-user/regressiontest/"
@@ -239,41 +244,96 @@ def readfile():
                 #d[value] = ""
     print(d)
     '''
-    dataserviceproperties = {'file.is_enabled': 'true\n', '#file.datasource': 's3\n', '#file.bucket': 'mentor.trips.dev\n', 'file.datasource': 'local\n', 'file.bucket': '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripfiles/mentorbusinessv3/1000\n', 'trip.is_enabled': 'true\n', 'trip.datasource': 'local\n', '#trip.dynamo.local_url': '\n', 'trip.dynamo.local_url': 'http://localhost:8000\n', 'trip.dynamo.table_prefix': '\n', 'trip.json.local_url': '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/jsonfiles/temp\n', 'driver.is_enabled': 'false\n', 'driver.datasource': 'aurora\n', 'group_scores.is_enabled': 'false\n', 'group_scores.datasource': 'dynamo\n', 'group_scores.dynamo.local_url': '\n', '# group_scores.dynamo.table_prefix': 'development\n'}
+    dataserviceproperties = {'file.is_enabled': 'true\n', '#file.datasource': 's3\n',
+                             '#file.bucket': 'mentor.trips.dev\n', 'file.datasource': 'local\n',
+                             'file.bucket': '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/tripfiles/mentorbusinessv3/1000\n',
+                             'trip.is_enabled': 'true\n', 'trip.datasource': 'local\n', '#trip.dynamo.local_url': '\n',
+                             'trip.dynamo.local_url': 'http://localhost:8000\n', 'trip.dynamo.table_prefix': '\n',
+                             'trip.json.local_url': '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/jsonfiles/temp\n',
+                             'driver.is_enabled': 'false\n', 'driver.datasource': 'aurora\n',
+                             'group_scores.is_enabled': 'false\n', 'group_scores.datasource': 'dynamo\n',
+                             'group_scores.dynamo.local_url': '\n',
+                             '# group_scores.dynamo.table_prefix': 'development\n'}
 
     data = ""
-    for key,value in d.items():
-        data = data +key +"="+ value
+    for key, value in d.items():
+        data = data + key + "=" + value
         if key == 'file.bucket':
-
-
-    print(data)
-    myfile = open('/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/backupconfigfolder/mentorbusinessv3/1000/config/data-service2.properties', 'w')
+            print(data)
+    myfile = open(
+        '/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/build/backupconfigfolder/mentorbusinessv3/1000/config/data-service2.properties',
+        'w')
     myfile.writelines(data)
     myfile.close()
 
 
-readfile()
+# readfile()
 
 
 def gettripsbttrip():
     data = pd.read_csv(
-        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3.csv", index_col=False)
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3.csv",
+        index_col=False)
     data = data.groupby('driver_id').head(5)
     driverlist10000 = data['driver_id'].unique()[1:2010]
     data10000 = data[data['driver_id'].isin(driverlist10000)]
-    print(len( data10000['driver_id'].unique()))
-    data10000.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3list10000.csv",
-                index=False)
+    print(len(data10000['driver_id'].unique()))
+    data10000.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3list10000.csv",
+        index=False)
     driverlist1000 = data['driver_id'].unique()[1:210]
     data1000 = data[data['driver_id'].isin(driverlist1000)]
-    print(len( data1000['driver_id'].unique()))
-    data1000.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3list1000.csv",
-                index=False)
+    print(len(data1000['driver_id'].unique()))
+    data1000.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/mentorv3/mentorv3list1000.csv",
+        index=False)
 
 
+def multi_run_wrapper(args):
+    return multipool(*args)
 
-#gettripsbttrip()
+
+def multipool(trip_id):
+    try:
+        driver_id = trip_id.split('-')[0]
+        session_id = trip_id.split('-')[1]
+
+        os.system(
+            "aws s3 cp s3://mentor.trips.production-365/" + str(
+                driver_id) + " " + "/home/ec2-user/regressiontest/tripfiles/non-armada/10000_new/" + str(
+                driver_id) + " --recursive --exclude='*' --include='" + str(session_id) + "*'")
+    except Exception as e:
+        print(e)
+        print("error:" + str(trip_id))
+
+
+def non_GEOTAB():
+    data = pd.read_csv(
+        "/home/ec2-user/analysis/trips_10.csv",
+        index_col=False)
+
+    # data = data.groupby('driver_id').head(10)
+    # data = data.head(11000)
+
+    input = data['trip_id'].values.tolist()
+    inputstr = [[str(i)] for i in input]
+    pool = Pool(20)
+
+    try:
+        with pool as p:
+            item = list(tqdm.tqdm(p.imap(multi_run_wrapper, inputstr), total=len(inputstr)))
+    except Exception as e:
+        print(e)
+        pool.terminate()
+        pool.join()
+        exit()
+
+    # data.to_csv("/Users/omerorhan/Documents/EventDetection/regression_server/new_pool_non_geotab/trips_10.csv", index=False)
+
+
+# non_GEOTAB()
+
+# gettripsbttrip()
 '''
 
 300423983	300423983-4d77a24858f64b2cac872960742cb1e2	trip.300423983.1568992956162.bin_v2.gz	365	1568992956160	1568994090538	300423983/4d77a24858f64b2cac872960742cb1e2_trip.300423983.1568992956162.bin_v2.gz	2019-09-20 08:41:36.0	
@@ -609,5 +669,155 @@ ORDER  BY total.source,
 
 
 
-
+select (driver_id), trip_id from (
+select driver_id,trip_id,split_part(trip_id,'-',2) part from trips where driver_id in 
+(select driver_id from (
+select driver_id, DATE(local_date),count(*) from trips
+where (local_date between '2020-03-15' and  '2020-05-01')
+and mode = 'CAR'
+and status = 'SUCCESS'
+and is_driver = true
+and is_personal = false
+and is_disputed = 'false'
+and source = 'MENTOR_NON_GEOTAB'
+group by driver_id, DATE(local_date) having count(*) >=5) data 
+group by driver_id having count(*)>=15  order by RANDOM()) and  
+local_date between '2020-03-15' and  '2020-05-01'
+and mode = 'CAR'
+and status = 'SUCCESS'
+and is_driver = true
+and is_personal = false
+and source = 'MENTOR_NON_GEOTAB' 
+and is_disputed = 'false')where part is not null and part <> ''
 '''
+
+
+def eventsanalysis():
+    data = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/analysis ralph/trip_results3.4.3baseWithDistance.csv")
+    dataevents = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/analysis ralph/trip_results3.4.6.csv")
+
+    datadistance = data[['distance', 's3_key']]
+
+    datafinal = dataevents.join(datadistance.set_index('s3_key'), on='s3_key')
+
+    datafinal.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/analysis ralph/trip_resultsFinal.csv")
+
+
+def eventsanalysis20():
+    import numpy as np
+    data = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/analysis ralph/trip_resultsFinal.csv")
+    list = [300842107, 301645350, 301425942, 301053227, 301581993, 300887355, 301206373, 301090845, 301369032,
+            301606556]
+    dataselected20 = data[data['driver_id'].isin(list)]
+    dataselected20 = dataselected20[dataselected20['score'] != 'None']
+    dataselected20 = dataselected20[['trip_id', 'driver_id', 'start_time', 'distance',
+                                     'displayed_speeding_20_count']]
+    dataselected20 = dataselected20.rename(columns={"displayed_speeding_20_count": "speeding_20_count"})
+    dataselected20['Speeding_20_count_Per100Miles'] = (dataselected20['speeding_20_count'] * 100) / (
+            dataselected20['distance'] * 0.000621371)
+
+    # table = pd.pivot_table(dataselected20, values='displayed_speeding_20_count', index=['driver_id', 'trip_id'],
+    #                       columns=['displayed_speeding_15_count'], aggfunc=np.sum)
+    dataselected20.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/analysis ralph/trip_resultsFinalPivot.csv")
+
+
+# eventsanalysis20()
+
+
+def eventsanalysis15():
+    import numpy as np
+    data = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/analysis ralph/trip_resultsFinal.csv")
+    list = [301425942, 301167922, 301488809, 301053227, 300729897, 301369032, 301581993, 301515745, 301168300,
+            301645350]
+    dataselected15 = data[data['driver_id'].isin(list)]
+    dataselected15 = dataselected15[dataselected15['score'] != 'None']
+    dataselected15 = dataselected15[['trip_id', 'driver_id', 'start_time', 'distance',
+                                     'displayed_speeding_15_count']]
+    dataselected15 = dataselected15.rename(columns={"displayed_speeding_15_count": "speeding_15_count"})
+    dataselected15['Speeding_15_count_Per100Miles'] = (dataselected15['speeding_15_count'] * 100) / (
+            dataselected15['distance'] * 0.000621371)
+
+    dataselected15.to_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/analysis ralph/trip_resultsFinalPivot_15.csv")
+
+
+# eventsanalysis15()
+
+
+def creatingchart():
+    import json
+    import math
+    with open(
+            '/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/jsons/300915166-e14e4490853041b88e3457b35e257399.json') as f:
+        data = json.load(f)
+
+    from datetime import datetime, timedelta
+    round = 0.138889
+
+    end_date = datetime.fromtimestamp(data['endTimestamp'] / 1000)
+    end_date = datetime.fromtimestamp(data['route'][len(data['route']) - 1]['timestamp'] / 1000)
+    list = []
+
+    for item in data['route']:
+        if item['speed'] * 2.2369362920544025 + round > 5:
+            start_date = datetime.fromtimestamp(item['timestamp'] / 1000)
+            break
+    while start_date < end_date:
+        start_date = (start_date + timedelta(0, 1))
+        list.append(start_date)
+
+    df_result = pd.DataFrame(
+        columns=['time', 'speed', 'speed_limit'])
+
+    dict = {}
+    for item in data['route']:
+        key = math.ceil(item['timestamp'] / 1000)
+        key = datetime.fromtimestamp(key)
+        dict.update({key: [item]})
+
+    for time in list:
+        speed = 0
+        speed_limit = 0
+        if time in dict:
+            item = dict[time]
+            speed = item[0]['speed'] * 2.2369362920544025 + round
+            if 'speedLimit' in item[0]:
+                speed_limit = item[0]['speedLimit'] * 2.2369362920544025 + round
+            else:
+                speed_limit = 0
+        df_result = df_result.append(
+            {'time': str(time.strftime('%H:%M:%S')), 'speed': speed, 'speed_limit': speed_limit}, ignore_index=True)
+
+    df_result['SPEEDING_15'] = 0
+    df_result['SPEEDING_20'] = 0
+
+    for events in data['events']:
+        if events['eventType'] == 'SPEEDING_15_MPH':
+            start_date = datetime.fromtimestamp(events['startTimestamp'] / 1000)
+            end_date = datetime.fromtimestamp(events['endTimestamp'] / 1000)
+            while start_date < end_date:
+                df_result.loc[
+                    (df_result['time'] == start_date.strftime('%H:%M:%S')), ['SPEEDING_15']] = [15]
+                start_date = (start_date + timedelta(0, 1))
+        if events['eventType'] == 'SPEEDING_20_MPH':
+            start_date = datetime.fromtimestamp(events['startTimestamp'] / 1000)
+            end_date = datetime.fromtimestamp(events['endTimestamp'] / 1000)
+            while start_date < end_date:
+                df_result.loc[
+                    (df_result['time'] == start_date.strftime('%H:%M:%S')), ['SPEEDING_20']] = [20]
+                start_date = (start_date + timedelta(0, 1))
+
+    from pandas import read_csv
+    from matplotlib import pyplot
+    # df_result = df_result[['time', 'speed']]
+    df_result.plot(x='time', y=['speed', 'speed_limit', 'SPEEDING_15', 'SPEEDING_20'])
+    pyplot.show()
+
+
+creatingchart()
