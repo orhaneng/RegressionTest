@@ -760,7 +760,6 @@ def creatingchart():
     from datetime import datetime, timedelta
     round = 0.138889
 
-    end_date = datetime.fromtimestamp(data['endTimestamp'] / 1000)
     end_date = datetime.fromtimestamp(data['route'][len(data['route']) - 1]['timestamp'] / 1000)
     list = []
 
@@ -815,8 +814,7 @@ def creatingchart():
 
     from pandas import read_csv
     from matplotlib import pyplot
-    # df_result = df_result[['time', 'speed']]
-    df_result.plot(x='time', y=['speed', 'speed_limit', 'SPEEDING_15', 'SPEEDING_20'])
+    df_result.plot(x='time', y=[ 'speed_limit','speed', 'SPEEDING_15', 'SPEEDING_20'])
     pyplot.show()
 
 

@@ -93,26 +93,44 @@ def driverScoreComparision(writer, df1, df2):
     events2 = df2.groupby(['driver_id'], as_index=False)[
         'displayed_speeding_count', 'displayed_speeding_15_count', 'displayed_speeding_20_count', 'hard_braking_count', 'hard_acceleration_count', 'phone_manipulation_count', 'hard_cornering_count'].agg(
         'sum')
+
+    distance1 = df1.groupby(['driver_id'], as_index=False)['distance'].sum()
+    distance2 = df2.groupby(['driver_id'], as_index=False)['distance'].sum()
+
     df_event_comp = pd.DataFrame(columns=['driver_id', 'speeding_old', 'speeding_new', 'hard_braking_old',
                                           'hard_braking_new', 'hard_acceleration_old', 'hard_acceleration_new',
                                           'phone_manipulation_old', 'phone_manipulation_new', 'hard_cornering_old',
                                           'hard_cornering_new'])
 
     df_event_comp['driver_id'] = events1['driver_id']
-    df_event_comp['speeding_old'] = events1['displayed_speeding_count']
-    df_event_comp['speeding_new'] = events2['displayed_speeding_count']
-    df_event_comp['speeding_15_old'] = events1['displayed_speeding_15_count']
-    df_event_comp['speeding_15_new'] = events2['displayed_speeding_15_count']
-    df_event_comp['speeding_20_old'] = events1['displayed_speeding_20_count']
-    df_event_comp['speeding_20_new'] = events2['displayed_speeding_20_count']
-    df_event_comp['hard_braking_old'] = events1['hard_braking_count']
-    df_event_comp['hard_braking_new'] = events2['hard_braking_count']
-    df_event_comp['hard_acceleration_old'] = events1['hard_acceleration_count']
-    df_event_comp['hard_acceleration_new'] = events2['hard_acceleration_count']
-    df_event_comp['phone_manipulation_old'] = events1['phone_manipulation_count']
-    df_event_comp['phone_manipulation_new'] = events2['phone_manipulation_count']
-    df_event_comp['hard_cornering_old'] = events1['hard_cornering_count']
-    df_event_comp['hard_cornering_new'] = events2['hard_cornering_count']
+    df_event_comp['speeding_old'] = round(
+        ((events1['displayed_speeding_count'] * 100) / (distance1['distance'] * 0.000621371)), 2)
+    df_event_comp['speeding_new'] = round(
+        ((events2['displayed_speeding_count'] * 100) / (distance2['distance'] * 0.000621371)), 2)
+    df_event_comp['speeding_15_old'] = round(
+        ((events1['displayed_speeding_15_count'] * 100) / (distance1['distance'] * 0.000621371)), 2)
+    df_event_comp['speeding_15_new'] = round(
+        ((events2['displayed_speeding_15_count'] * 100) / (distance2['distance'] * 0.000621371)), 2)
+    df_event_comp['speeding_20_old'] = round(
+        ((events1['displayed_speeding_20_count'] * 100) / (distance1['distance'] * 0.000621371)), 2)
+    df_event_comp['speeding_20_new'] = round(
+        ((events2['displayed_speeding_20_count'] * 100) / (distance2['distance'] * 0.000621371)), 2)
+    df_event_comp['hard_braking_old'] = round(
+        ((events1['hard_braking_count'] * 100) / (distance1['distance'] * 0.000621371)), 2)
+    df_event_comp['hard_braking_new'] = round(
+        ((events2['hard_braking_count'] * 100) / (distance2['distance'] * 0.000621371)), 2)
+    df_event_comp['hard_acceleration_old'] = round(
+        ((events1['hard_acceleration_count'] * 100) / (distance1['distance'] * 0.000621371)), 2)
+    df_event_comp['hard_acceleration_new'] = round(
+        ((events2['hard_acceleration_count'] * 100) / (distance2['distance'] * 0.000621371)), 2)
+    df_event_comp['phone_manipulation_old'] = round(
+        ((events1['phone_manipulation_count'] * 100) / (distance1['distance'] * 0.000621371)), 2)
+    df_event_comp['phone_manipulation_new'] = round(
+        ((events2['phone_manipulation_count'] * 100) / (distance2['distance'] * 0.000621371)), 2)
+    df_event_comp['hard_cornering_old'] = round(
+        ((events1['hard_cornering_count'] * 100) / (distance1['distance'] * 0.000621371)), 2)
+    df_event_comp['hard_cornering_new'] = round(
+        ((events2['hard_cornering_count'] * 100) / (distance2['distance'] * 0.000621371)), 2)
 
     '''
 
