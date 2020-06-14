@@ -164,6 +164,9 @@ def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
     os.system(
         "cp -rf " + FOLDER_PATH + "build/config " + FOLDER_PATH + "build/telematics-server/")
 
+    os.system(
+        "cp " + FOLDER_PATH + "build/server.sh " + FOLDER_PATH + "build/telematics-server/")
+
     '''
     if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         if regressionType == RegressionTypeEnum.NonArmada or regressionType == RegressionTypeEnum.MentorBusinessV3:

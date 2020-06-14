@@ -40,8 +40,8 @@ def getTripsFromRegressionServer(path, threadsize):
         pool.join()
         exit()
     result = pd.DataFrame(comparisonresult)
-    result.columns = ["trip_id", "driver_id", "start_time", "score","distance",
-                      "stop_count", "stop_duration",
+    result.columns = ["trip_id", "driver_id", "start_time", "score", "distance", "duration",
+                                                                                 "stop_count", "stop_duration",
                       "start_count", "start_duration", "smooth_stop_count",
                       "smooth_stop_duration", "smooth_accel_count",
                       "smooth_accel_duration", "right_turn_count", "right_turn_duration",
@@ -53,7 +53,8 @@ def getTripsFromRegressionServer(path, threadsize):
                       "hard_cornering_duration", "call_in_count",
                       "call_in_duration", "call_out_count", "call_out_duration",
                       "phone_manipulation_count", "phone_manipulation_duration",
-                      "displayed_speeding_count", "displayed_speeding_duration","displayed_speeding_15_count", "displayed_speeding_15_duration",
+                      "displayed_speeding_count", "displayed_speeding_duration", "displayed_speeding_15_count",
+                      "displayed_speeding_15_duration",
                       "displayed_speeding_20_count", "displayed_speeding_20_duration"]
     result.sort_values(['driver_id', 'start_time'], inplace=True)
     return result
@@ -91,7 +92,7 @@ def processJSONFile(file):
                 event_dict[e_name] = [0, 0]
             event_dict[e_name][0] += 1
             event_dict[e_name][1] += duration
-    trips = pd.DataFrame(columns=["driver_id", "trip_id", "start_time", "score", "distance" , "events"])
+    trips = pd.DataFrame(columns=["driver_id", "trip_id", "start_time", "score", "distance", "duration", "events"])
     index = 0
     score = "None"
     if "scores" in trip_json:
@@ -100,13 +101,17 @@ def processJSONFile(file):
     distance = "None"
     if "distance" in trip_json:
         distance = trip_json["distance"]
-    trips.loc[index] = [trip_json["driverId"], trip_json["tripId"], trip_json["startTimestamp"], score, trip_json["distance"], []]
+    duration = "None"
+    if "duration" in trip_json:
+        duration = trip_json["duration"]
+    trips.loc[index] = [trip_json["driverId"], trip_json["tripId"], trip_json["startTimestamp"], score,
+                        trip_json["distance"], trip_json["duration"], []]
     index += 1
     event_definition = ["STOP", "START", "SMOOTH_STOP", "SMOOTH_START",
                         "RIGHT_TURN", "LEFT_TURN", "SMOOTH_RIGHT_TURN", "SMOOTH_LEFT_TURN",
                         "HARD_ACCELERATION", "HARD_BRAKING", "HARD_CORNERING",
                         "CALL_INCOMING", "CALL_OUTGOING", "PHONE_MANIPULATION",
-                        "SPEEDING","SPEEDING_15_MPH","SPEEDING_20_MPH"]
+                        "SPEEDING", "SPEEDING_15_MPH", "SPEEDING_20_MPH"]
 
     result_index = 0
     for index in list(trips.index):
@@ -119,7 +124,7 @@ def processJSONFile(file):
         row.append(e_start)
         row.append(trips.loc[index, "score"])
         row.append(trips.loc[index, "distance"])
-
+        row.append(trips.loc[index, "duration"])
         for definition in event_definition:
             if event_dict != None and event_dict.get(definition) != None:
                 row.append(event_dict.get(definition)[0])

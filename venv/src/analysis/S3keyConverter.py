@@ -754,7 +754,7 @@ def creatingchart():
     import json
     import math
     with open(
-            '/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/jsons/300915166-e14e4490853041b88e3457b35e257399.json') as f:
+            '/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/jsons/temp.json') as f:
         data = json.load(f)
 
     from datetime import datetime, timedelta
@@ -765,14 +765,14 @@ def creatingchart():
 
     for item in data['route']:
         if item['speed'] * 2.2369362920544025 + round > 5:
-            start_date = datetime.fromtimestamp(item['timestamp'] / 1000)
+            start_date = datetime.fromtimestamp(int(item['timestamp'] / 1000))
             break
     while start_date < end_date:
         start_date = (start_date + timedelta(0, 1))
         list.append(start_date)
 
     df_result = pd.DataFrame(
-        columns=['time', 'speed', 'speed_limit'])
+        columns=['time', 'speed', 'speed_limit', 'speed_limit_plus_15MPH', 'speeding', 'speed_limit_plus_10MPH'])
 
     dict = {}
     for item in data['route']:
@@ -783,18 +783,23 @@ def creatingchart():
     for time in list:
         speed = 0
         speed_limit = 0
+        speed_limitplus15 = 0
+        speed_limitplus10 = 0
         if time in dict:
             item = dict[time]
             speed = item[0]['speed'] * 2.2369362920544025 + round
             if 'speedLimit' in item[0]:
                 speed_limit = item[0]['speedLimit'] * 2.2369362920544025 + round
-            else:
-                speed_limit = 0
+                speed_limitplus15 = speed_limit + 15
+                speed_limitplus10 = speed_limit + 10
         df_result = df_result.append(
-            {'time': str(time.strftime('%H:%M:%S')), 'speed': speed, 'speed_limit': speed_limit}, ignore_index=True)
+            {'time': str(time.strftime('%H:%M:%S')), 'speed': speed, 'speed_limit': speed_limit,
+             'speed_limit_plus_15MPH': speed_limitplus15, 'speed_limit_plus_10MPH': speed_limitplus10},
+            ignore_index=True)
 
     df_result['SPEEDING_15'] = 0
     df_result['SPEEDING_20'] = 0
+    df_result['SPEEDING'] = 0
 
     for events in data['events']:
         if events['eventType'] == 'SPEEDING_15_MPH':
@@ -811,11 +816,559 @@ def creatingchart():
                 df_result.loc[
                     (df_result['time'] == start_date.strftime('%H:%M:%S')), ['SPEEDING_20']] = [20]
                 start_date = (start_date + timedelta(0, 1))
+        if events['eventType'] == 'SPEEDING':
+            start_date = datetime.fromtimestamp(events['startTimestamp'] / 1000)
+            end_date = datetime.fromtimestamp(events['endTimestamp'] / 1000)
+            while start_date < end_date:
+                df_result.loc[
+                    (df_result['time'] == start_date.strftime('%H:%M:%S')), ['SPEEDING']] = [20]
+                start_date = (start_date + timedelta(0, 1))
 
     from pandas import read_csv
     from matplotlib import pyplot
-    df_result.plot(x='time', y=[ 'speed_limit','speed', 'SPEEDING_15', 'SPEEDING_20'])
+    import numpy as np
+    df_result.plot(x='time', y=['speed_limit', 'speed', 'speed_limit_plus_15MPH', 'SPEEDING_15'])
+
+    listindex = []
+    listdata = []
+
+    for index in range(0, len(df_result)):
+        if index % 100 == 0:
+            listindex.append(index)
+            listdata.append(df_result['time'].to_list()[index])
+    pyplot.xticks(listindex, listdata, rotation='vertical')
     pyplot.show()
 
 
-creatingchart()
+# creatingchart()
+
+
+def creatingSPEED(linkgeotabtrip, linknongeotabtrip):
+    import json
+    import math
+    with open(linkgeotabtrip) as f:
+        geotabdata = json.load(f)
+
+    from datetime import datetime, timedelta
+    round = 0.138889
+
+    geotabend_date = datetime.fromtimestamp(geotabdata['route'][len(geotabdata['route']) - 1]['timestamp'] / 1000)
+    list = []
+
+    for item in geotabdata['route']:
+        if item['speed'] * 2.2369362920544025 + round > 5:
+            geotabstart_date = datetime.fromtimestamp(int(item['timestamp'] / 1000))
+            break
+
+    with open(linknongeotabtrip) as f:
+        nongeotabdata = json.load(f)
+
+    nongeotabend_date = datetime.fromtimestamp(
+        nongeotabdata['route'][len(nongeotabdata['route']) - 1]['timestamp'] / 1000)
+    list = []
+
+    for item in nongeotabdata['route']:
+        if item['speed'] * 2.2369362920544025 + round > 5:
+            nongeotabstart_date = datetime.fromtimestamp(int(item['timestamp'] / 1000))
+            break
+
+    if geotabstart_date < nongeotabstart_date:
+        start_date = nongeotabstart_date
+    else:
+        start_date = geotabstart_date
+
+    if geotabend_date < nongeotabend_date:
+        end_date = nongeotabend_date
+    else:
+        end_date = geotabend_date
+
+    while start_date < end_date:
+        start_date = (start_date + timedelta(0, 1))
+        list.append(start_date)
+
+    df_result = pd.DataFrame(
+        columns=['speed_geotab', 'speed_nongeotab'])
+
+    geotabdict = {}
+    for item in geotabdata['route']:
+        key = math.ceil(item['timestamp'] / 1000)
+        key = datetime.fromtimestamp(key)
+        geotabdict.update({key: [item]})
+
+    nongeotabdict = {}
+    for item in nongeotabdata['route']:
+        key = math.ceil(item['timestamp'] / 1000)
+        key = datetime.fromtimestamp(key)
+        nongeotabdict.update({key: [item]})
+
+    count = 0
+    sumofdifferent = 0
+    for time in list:
+        geotabspeed = 0
+        nongeotabspeed = 0
+        if time in geotabdict:
+            item = geotabdict[time]
+            geotabspeed = item[0]['speed'] * 2.2369362920544025 + round
+        if time in nongeotabdict:
+            item = nongeotabdict[time]
+            nongeotabspeed = item[0]['speed'] * 2.2369362920544025 + round
+        if geotabspeed != 0 and nongeotabspeed != 0:
+            sumofdifferent = sumofdifferent + (geotabspeed - nongeotabspeed)
+            count = count + 1
+        df_result = df_result.append(
+            {'time': str(time.strftime('%H:%M:%S')), 'speed_geotab': geotabspeed, 'speed_nongeotab': nongeotabspeed},
+            ignore_index=True)
+    print('count:', count)
+    print('average difference', (sumofdifferent / count))
+
+    from pandas import read_csv
+    from matplotlib import pyplot
+    import numpy as np
+    df_result.plot(x='time', y=['speed_geotab', 'speed_nongeotab'])
+
+    listindex = []
+    listdata = []
+
+    for index in range(0, len(df_result)):
+        if index % 100 == 0:
+            listindex.append(index)
+            listdata.append(df_result['time'].to_list()[index])
+    pyplot.xticks(listindex, listdata, rotation='vertical')
+    pyplot.show()
+
+
+def creatingSPEEDLIMIT(linkgeotabtrip, linknongeotabtrip):
+    import json
+    import math
+    with open(linkgeotabtrip) as f:
+        geotabdata = json.load(f)
+
+    from datetime import datetime, timedelta
+    round = 0.138889
+
+    geotabend_date = datetime.fromtimestamp(geotabdata['route'][len(geotabdata['route']) - 1]['timestamp'] / 1000)
+    list = []
+
+    for item in geotabdata['route']:
+        if item['speed'] * 2.2369362920544025 + round > 5:
+            geotabstart_date = datetime.fromtimestamp(int(item['timestamp'] / 1000))
+            break
+
+    with open(linknongeotabtrip) as f:
+        nongeotabdata = json.load(f)
+
+    nongeotabend_date = datetime.fromtimestamp(
+        nongeotabdata['route'][len(nongeotabdata['route']) - 1]['timestamp'] / 1000)
+    list = []
+
+    for item in nongeotabdata['route']:
+        if item['speed'] * 2.2369362920544025 + round > 5:
+            nongeotabstart_date = datetime.fromtimestamp(int(item['timestamp'] / 1000))
+            break
+
+    if geotabstart_date < nongeotabstart_date:
+        start_date = nongeotabstart_date
+    else:
+        start_date = geotabstart_date
+
+    if geotabend_date < nongeotabend_date:
+        end_date = nongeotabend_date
+    else:
+        end_date = geotabend_date
+
+    while start_date < end_date:
+        start_date = (start_date + timedelta(0, 1))
+        list.append(start_date)
+
+    df_result = pd.DataFrame(
+        columns=['speed_geotab', 'speed_nongeotab'])
+
+    geotabdict = {}
+    for item in geotabdata['route']:
+        key = math.ceil(item['timestamp'] / 1000)
+        key = datetime.fromtimestamp(key)
+        geotabdict.update({key: [item]})
+
+    nongeotabdict = {}
+    for item in nongeotabdata['route']:
+        key = math.ceil(item['timestamp'] / 1000)
+        key = datetime.fromtimestamp(key)
+        nongeotabdict.update({key: [item]})
+
+    count = 0
+    countgeotabcount = 0
+    sumofdifferent = 0
+    listspeeds = []
+    for time in list:
+        geotabspeed = 0
+        nongeotabspeed = 0
+        if time in geotabdict:
+            item = geotabdict[time]
+            if 'speedLimit' in item[0]:
+                geotabspeed = item[0]['speedLimit'] * 2.2369362920544025 + round
+        if time in nongeotabdict:
+            item = nongeotabdict[time]
+            if 'speedLimit' in item[0]:
+                nongeotabspeed = item[0]['speedLimit'] * 2.2369362920544025 + round
+        if geotabspeed != 0 and nongeotabspeed != 0:
+            listspeeds.append([geotabspeed, nongeotabspeed])
+            sumofdifferent = sumofdifferent + (geotabspeed - nongeotabspeed)
+            count = count + 1
+        df_result = df_result.append(
+            {'time': str(time.strftime('%H:%M:%S')), 'speed_limit_geotab': geotabspeed,
+             'speed_limit_nongeotab': nongeotabspeed},
+            ignore_index=True)
+
+    print('count:', count)
+    print('average difference', (sumofdifferent / count))
+
+    from pandas import read_csv
+    from matplotlib import pyplot
+    import numpy as np
+    df_result.plot(x='time', y=['speed_limit_geotab', 'speed_limit_nongeotab'])
+
+    listindex = []
+    listdata = []
+
+    for index in range(0, len(df_result)):
+        if index % 100 == 0:
+            listindex.append(index)
+            listdata.append(df_result['time'].to_list()[index])
+    pyplot.xticks(listindex, listdata, rotation='vertical')
+    pyplot.show()
+
+
+def createSPEEDandSPEEDLIMITCharts():
+    linkgeotabtrip = "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/jsons/trip-9dde94f72e694dbb85322977860c0e30.json"
+    linknongeotabtrip = "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/jsons/300914865-e00b9e56ef284b35b6fb4b1b7694b614.json"
+    creatingSPEED(linkgeotabtrip, linknongeotabtrip)
+    # creatingSPEEDLIMIT(linkgeotabtrip, linknongeotabtrip)
+
+
+# createSPEEDandSPEEDLIMITCharts()
+
+
+regressionanalysislink = "/Users/omerorhan/Documents/chris/trip_results3.4.3geotab10k.csv"
+
+
+def regressiondataanalysis():
+    data = pd.read_csv(
+        regressionanalysislink)
+
+    dictscore = {"100-499 RISKY": 0, "500-599 POOR": 0, "560-709 AVERAGE": 0, "710-799 GOOD": 0, "800-850 GREAT": 0}
+
+    for item in dictscore.keys():
+        dictscore[item] = ((len(data[(data['score'] >= int(item.split("-")[0])) & (
+                data['score'] <= int(item.split("-")[1].split(' ')[0]))])) * 100) / len(data)
+
+        '''    
+        if item != "None" and int(item) == 850:
+            count = dictscore["850"]
+            count = count + 1
+            dictscore["850"] = count
+        '''
+    '''
+    from matplotlib import pyplot as plt
+    import numpy as np
+    fig = plt.figure()
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis('equal')
+    ax.pie(dictscore.values(), labels=dictscore.keys(), autopct='%1.2f%%')
+    # ax.pie([20,30,60], labels=["a","b","c"], autopct='%1.2f%%')
+    plt.show()
+    print(dictscore)
+
+    totalcount = len(data)
+    for key, value in dictscore.items():
+        dictscore[key] = round((value * 100) / totalcount)
+    dictscore = dictscore
+    '''
+
+    import matplotlib.pyplot as plt
+    # The slices will be ordered and plotted counter-clockwise.
+
+    patches, texts = plt.pie(dictscore.values(), startangle=90)
+    plt.legend(patches, dictscore.keys(), loc="best",
+               labels=['%s, %1.1f %%' % (l, s) for l, s in zip(dictscore.keys(), dictscore.values())])
+    # Set aspect ratio to be equal so that pie is drawn as a circle.
+    plt.axis('equal')
+    plt.tight_layout()
+    plt.show()
+    print(dictscore)
+
+
+# regressiondataanalysis()
+
+
+def eventAnalysischart():
+
+    data = pd.read_csv(regressionanalysislink)
+
+    events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+              'PHONE_MANIPULATION', 'SPEEDING']
+
+    data = data.rename(columns={"hard_acceleration_count": "HARD_ACCELERATION", "hard_braking_count": "HARD_BRAKING"
+        , "hard_cornering_count": "HARD_CORNERING", "phone_manipulation_count": "PHONE_MANIPULATION",
+                                "displayed_speeding_count": "SPEEDING"})
+
+    from itertools import combinations
+
+    # ONE COMBINATION
+    comb = combinations(events, 1)
+    df_result = pd.DataFrame(
+        columns=['Combination', 'Event Combinations', '% of trips in only one category'])
+    for item in list(comb):
+        events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+                  'PHONE_MANIPULATION', 'SPEEDING']
+        events.remove(item[0])
+        count = len(
+            data[(data[item[0]] != 0) & (data[events[0]] == 0) & (data[events[1]] == 0) & (
+                    data[events[2]] == 0)& (data[events[3]] == 0)])
+
+        percent = round((count * 100) / len(data), 2)
+        df_result = df_result.append(
+            {'Combination': 1, 'Event Combinations': item[0], '% of trips in only one category': percent},
+            ignore_index=True)
+    df_result = df_result.sort_values(by='% of trips in only one category', ascending=False)
+    print(df_result)
+
+    '''
+    data = pd.read_csv(regressionanalysislink)
+
+    events = {'hard_acceleration_count': 0, 'hard_braking_count': 0, 'hard_cornering_count': 0,
+              'phone_manipulation_count': 0, 'displayed_speeding_count': 0}
+
+    # for key, value in events.items():
+    #    events[key] = round((len(data[data[key] != 0]) / len(data)) * 100, 2)
+    onlyhardaccleration = data[
+        (data['hard_acceleration_count'] != 0) & (data['hard_braking_count'] == 0) & (data['hard_cornering_count'] == 0)
+        & (data['phone_manipulation_count'] == 0) & (data['displayed_speeding_count'] == 0)]
+
+    onlyhardbraking = data[
+        (data['hard_acceleration_count'] == 0) & (data['hard_braking_count'] != 0) & (data['hard_cornering_count'] == 0)
+        & (data['phone_manipulation_count'] == 0) & (data['displayed_speeding_count'] == 0)]
+
+    onlyhardcornering = data[
+        (data['hard_acceleration_count'] == 0) & (data['hard_braking_count'] == 0) & (data['hard_cornering_count'] != 0)
+        & (data['phone_manipulation_count'] == 0) & (data['displayed_speeding_count'] == 0)]
+
+    onlyPhonemanipulation = data[
+        (data['hard_acceleration_count'] == 0) & (data['hard_braking_count'] == 0) & (data['hard_cornering_count'] == 0)
+        & (data['phone_manipulation_count'] != 0) & (data['displayed_speeding_count'] == 0)]
+
+    onlySpeeding = data[
+        (data['hard_acceleration_count'] == 0) & (data['hard_braking_count'] == 0) & (data['hard_cornering_count'] == 0)
+        & (data['phone_manipulation_count'] == 0) & (data['displayed_speeding_count'] != 0)]
+
+    df_result = pd.DataFrame(
+        columns=['Event Type', '% of trips in only one category'])
+
+    df_result = df_result.append({'Event Type': "HARD_ACCELERATION", '% of trips in only one category': round(
+        ((len(onlyhardaccleration) * 100) / len(data)), 2)},
+                                 ignore_index=True)
+
+    df_result = df_result.append({'Event Type': "HARD_BRAKING", '% of trips in only one category': round(
+        ((len(onlyhardbraking) * 100) / len(data)), 2)},
+                                 ignore_index=True)
+
+    df_result = df_result.append({'Event Type': "HARD_CORNERING", '% of trips in only one category': round(
+        ((len(onlyhardcornering) * 100) / len(data)), 2)},
+                                 ignore_index=True)
+
+    df_result = df_result.append({'Event Type': "PHONE_MANIPULATION", '% of trips in only one category': round(
+        ((len(onlyPhonemanipulation) * 100) / len(data)), 2)},
+                                 ignore_index=True)
+
+    df_result = df_result.append({'Event Type': "SPEEDING", '% of trips in only one category': round(
+        ((len(onlySpeeding) * 100) / len(data)), 2)},
+                                 ignore_index=True)
+
+    df_result = df_result.sort_values(by='% of trips in only one category', ascending=False)
+
+    df_result.to_csv("/Users/omerorhan/Documents/chris/events.csv")
+
+    '''
+#eventAnalysischart()
+
+
+def eventAnalysiscombinationchart():
+    data = pd.read_csv(regressionanalysislink)
+
+    events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+              'PHONE_MANIPULATION', 'SPEEDING']
+
+    data = data.rename(columns={"hard_acceleration_count": "HARD_ACCELERATION", "hard_braking_count": "HARD_BRAKING"
+        , "hard_cornering_count": "HARD_CORNERING", "phone_manipulation_count": "PHONE_MANIPULATION",
+                                "displayed_speeding_count": "SPEEDING"})
+
+    from itertools import combinations
+
+    # TWO COMBINATION
+    comb = combinations(events, 2)
+    df_result = pd.DataFrame(
+        columns=['Combination', 'Event Combinations', '% of trips'])
+    for item in list(comb):
+        events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+                  'PHONE_MANIPULATION', 'SPEEDING']
+        events.remove(item[0])
+        events.remove(item[1])
+        count = len(
+            data[(data[item[0]] != 0) & (data[item[1]] != 0) & (data[events[0]] == 0) & (data[events[1]] == 0) & (
+                    data[events[2]] == 0)])
+
+        percent = round((count * 100) / len(data), 2)
+        df_result = df_result.append(
+            {'Combination': 2, 'Event Combinations': item[1] + " - " + item[0], '% of trips': percent},
+            ignore_index=True)
+    df_result = df_result.sort_values(by='% of trips', ascending=False)
+
+    # THREE COMBINATION
+
+    events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+              'PHONE_MANIPULATION', 'SPEEDING']
+    comb = combinations(events, 3)
+
+    for item in list(comb):
+        events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+                  'PHONE_MANIPULATION', 'SPEEDING']
+        events.remove(item[0])
+        events.remove(item[1])
+        events.remove(item[2])
+        count = len(
+            data[(data[item[0]] != 0) & (data[item[1]] != 0) & (data[item[2]] != 0) & (data[events[0]] == 0) & (
+                    data[events[1]] == 0)])
+
+        percent = round((count * 100) / len(data), 2)
+        df_result = df_result.append(
+            {'Combination': 3, 'Event Combinations': item[0] + " - " + item[1] + " - " + item[2],
+             '% of trips': percent},
+            ignore_index=True)
+    df_result = df_result.sort_values(by='% of trips', ascending=False)
+
+    # FOUR COMBINATION
+
+    events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+              'PHONE_MANIPULATION', 'SPEEDING']
+    comb = combinations(events, 4)
+
+    for item in list(comb):
+        events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+                  'PHONE_MANIPULATION', 'SPEEDING']
+        events.remove(item[0])
+        events.remove(item[1])
+        events.remove(item[2])
+        events.remove(item[3])
+        count = len(
+            data[(data[item[0]] != 0) & (data[item[1]] != 0) & (data[item[2]] != 0) & (data[item[3]] != 0) & (
+                    data[events[0]] == 0)])
+
+        percent = round((count * 100) / len(data), 2)
+        df_result = df_result.append(
+            {'Combination': 4, 'Event Combinations': item[0] + " - " + item[1] + " - " + item[2] + " - " + item[3],
+             '% of trips': percent},
+            ignore_index=True)
+    df_result = df_result.sort_values(by='% of trips', ascending=False)
+
+    # FIVE COMBINATION
+
+    events = ['HARD_ACCELERATION', 'HARD_BRAKING', 'HARD_CORNERING',
+              'PHONE_MANIPULATION', 'SPEEDING']
+
+    count = len(
+        data[(data[events[0]] != 0) & (data[events[1]] != 0) & (data[events[2]] != 0) & (data[events[3]] != 0) & (
+                data[events[4]] != 0)])
+
+    percent = round((count * 100) / len(data), 2)
+    df_result = df_result.append(
+        {'Combination': 5,
+         'Event Combinations': events[0] + " - " + events[1] + " - " + events[2] + " - " + events[3] + " - " + events[
+             4],
+         '% of trips': percent},
+        ignore_index=True)
+    df_result = df_result.sort_values(by=['Combination', '% of trips'], ascending=False)
+
+    df_result.to_csv("/Users/omerorhan/Documents/chris/events.csv")
+
+
+#eventAnalysiscombinationchart()
+
+
+def distanceAnalysis():
+    data = pd.read_csv(regressionanalysislink)
+
+    data['distance_mile'] = round(data['distance'] * 0.000621371)
+
+    dict = {"0-50 MILES": 0, "51-100 MILES": 0, "101-150 MILES": 0, "151-200 MILES": 0, "201-251 MILES": 0,
+            "251-300 MILES": 0, "301-2000 MILES": 0}
+
+    for item in dict.keys():
+        dict[item] = ((len(data[(data['distance_mile'] >= int(item.split("-")[0])) & (
+                data['distance_mile'] <= int(item.split("-")[1].split(' ')[0]))])) * 100) / len(data)
+
+    '''
+    from matplotlib import pyplot as plt
+    import numpy as np
+    fig = plt.figure()
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis('equal')
+    explode = (0, 0, 0, 0,0,0,0.1)
+
+    ax.pie(dict.values(),explode=explode, labels=dict.keys(), autopct='%1.2f%%')
+    # ax.pie([20,30,60], labels=["a","b","c"], autopct='%1.2f%%')
+    plt.legend(patches, labels, loc="best")
+    plt.show()
+    '''
+    import matplotlib.pyplot as plt
+    # The slices will be ordered and plotted counter-clockwise.
+
+    patches, texts = plt.pie(dict.values(), startangle=90)
+    plt.legend(patches, dict.keys(), loc="best",
+               labels=['%s, %1.1f %%' % (l, s) for l, s in zip(dict.keys(), dict.values())])
+    # Set aspect ratio to be equal so that pie is drawn as a circle.
+    plt.axis('equal')
+    plt.tight_layout()
+    plt.show()
+    print(dictscore)
+
+
+# distanceAnalysis()
+
+def durationAnalysis():
+    data = pd.read_csv(regressionanalysislink)
+
+    data['duration_hour'] = (round(data['duration']) * 0.000277778)
+
+    dict = {"0-1 HOUR": 0, "1-2 HOURS": 0, "2-3 HOURS": 0, "3-4 HOURS": 0, "4-5 HOURS": 0, "5-6 HOURS": 0,
+            "6-7 HOURS": 0, "7-8 HOURS": 0, "8-9 HOURS": 0, "9-10 HOURS": 0, "10-11 HOURS": 0, "11-12 HOURS": 0,
+            "13-24 HOURS": 0, "24-48 HOURS": 0}
+    print(len(data[data['duration_hour'] > 25]))
+    for item in dict.keys():
+        dict[item] = ((len(data[(data['duration_hour'] >= int(item.split("-")[0])) & (
+                data['duration_hour'] < int(item.split("-")[1].split(' ')[0]))])) * 100) / len(data)
+
+    '''
+    from matplotlib import pyplot as plt
+    import numpy as np
+    fig = plt.figure()
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis('equal')
+    explode = (0, 0, 0, 0,0,0,0.1)
+
+    ax.pie(dict.values(),explode=explode, labels=dict.keys(), autopct='%1.2f%%')
+    # ax.pie([20,30,60], labels=["a","b","c"], autopct='%1.2f%%')
+    plt.legend(patches, labels, loc="best")
+    plt.show()
+    '''
+    import matplotlib.pyplot as plt
+    # The slices will be ordered and plotted counter-clockwise.
+
+    patches, texts = plt.pie(dict.values(), startangle=90)
+    plt.legend(patches, dict.keys(), loc="best",
+               labels=['%s, %1.1f %%' % (l, s) for l, s in zip(dict.keys(), dict.values())])
+    # Set aspect ratio to be equal so that pie is drawn as a circle.
+    plt.axis('equal')
+    plt.title("NON-GEOTAB Duration")
+    plt.tight_layout()
+    plt.show()
+
+durationAnalysis()

@@ -258,6 +258,7 @@ def processgetstartendtimefromJSON(FOLDER_PATH, RESULT_FILE_PATH, resultfilename
     processTrips(mergedf, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, weekstart, weekend)
 
 
+
 def processTrips(df_result, exampleList, FOLDER_PATH, RESULT_FILE_PATH, resultfilename, weekstart, weekend):
     threadjobs = []
     print("process trips start")
