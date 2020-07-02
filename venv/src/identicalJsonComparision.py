@@ -6,7 +6,9 @@ from multiprocessing import Pool
 import tqdm
 import pandas as pd
 import sys
+
 sys.setrecursionlimit(2000)
+
 
 def remove_keys(obj, rubbish):
     if isinstance(obj, dict):
@@ -31,12 +33,17 @@ def cleanJSON(text):
     dict = remove_keys(dict, "eventId")
     dict = remove_keys(dict, "telematicsVersion")
     dict = remove_keys(dict, "mapProvider")
+    '''
+    dict = remove_keys(dict, "maxSpeed")
+    dict = remove_keys(dict, "maxAcceleration")
+    dict = remove_keys(dict, "legIndex")
+    dict = remove_keys(dict, "timeOffset")
+    '''
     text = str(dict).replace("\'", "\"")
     return text
 
 
 def checktwoJSONfiles(file1, file2, name):
-
     with open(file1, encoding='utf-8') as f:
         trip_json1 = json.loads(cleanJSON(f.read()))
 
@@ -44,6 +51,7 @@ def checktwoJSONfiles(file1, file2, name):
         trip_json2 = json.loads(cleanJSON(f.read()))
 
     return [diff(trip_json1, trip_json2), name]
+
 
 def multi_run_wrapper(args):
     return checktwoJSONfiles(*args)
@@ -88,10 +96,10 @@ def JSONcomparision(path, poolsize, writer, regressionType, threadsize):
         exit()
 
     head = pd.DataFrame(columns=["All trips are " + ("identical" if not isallfilesidentical else "not identical")])
-    #head.to_excel(writer, sheet_name='JSON Comparision', startrow=1, startcol=1)
-    #result.to_excel(writer, sheet_name='JSON Comparision', startrow=2, startcol=1)
+    # head.to_excel(writer, sheet_name='JSON Comparision', startrow=1, startcol=1)
+    # result.to_excel(writer, sheet_name='JSON Comparision', startrow=2, startcol=1)
     print("Files are ", "identical" if not isallfilesidentical else "not identical")
     return writer
 
-#JSONcomparision("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/", 1000, None,
+# JSONcomparision("/Users/omerorhan/Documents/EventDetection/regression_server/regressiontest/", 1000, None,
 #                RegressionTypeEnum.MentorBusiness,5 )
