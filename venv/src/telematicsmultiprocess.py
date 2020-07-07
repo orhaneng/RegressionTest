@@ -11,9 +11,10 @@ import tqdm
 import time
 from enum import Enum
 from src.Enums import *
+import os.path
+from os import path
 
-
-def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType, regressiontype):
+def uploadTripFilesandProcess(FOLDER_PATH, batch_file_dir, threadCount, regressionProcessType, regressiontype):
     log = []
     file_names = []
     driver_id_set = None
@@ -38,21 +39,21 @@ def uploadTripFilesandProcess(batch_file_dir, threadCount, regressionProcessType
 
                         input.append(
                             tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx,
-                                   regressionProcessType, regressiontype)))
+                                   regressionProcessType, regressiontype, FOLDER_PATH)))
                     elif regressiontype == RegressionTypeEnum.NonArmada or regressiontype == RegressionTypeEnum.MentorBusinessV3:
                         sessionidlist.append(file_names[idx][jdx].split('_')[0])
                 if file_names[idx][jdx].endswith('.json'):
                     if regressiontype == RegressionTypeEnum.GEOTAB:
                         input.append(
                             tuple((driver_id_set[idx], batch_file_dir, file_names[idx][jdx], idx, jdx,
-                                   regressionProcessType, regressiontype)))
+                                   regressionProcessType, regressiontype, FOLDER_PATH)))
             if regressiontype == RegressionTypeEnum.NonArmada or regressiontype == RegressionTypeEnum.MentorBusinessV3:
                 sessionidlist = list(set(sessionidlist))
                 for sessionid in sessionidlist:
                     input.append(
                         tuple((
                             driver_id_set[idx], "", sessionid, idx, 0, regressionProcessType,
-                            regressiontype)))
+                            regressiontype, FOLDER_PATH)))
 
     print("Processing trips...threadsize:", threadCount)
     pool = Pool(threadCount)
@@ -79,7 +80,7 @@ def multi_run_wrapper(args):
     return processDriver(*args)
 
 
-def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProcessType, regressiontype):
+def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProcessType, regressiontype, FOLDER_PATH):
     try:
         if regressiontype == RegressionTypeEnum.MentorBusiness:
             server_url = 'http://localhost:8080/api/v2/drivers'
@@ -112,12 +113,17 @@ def processDriver(driver_id, batch_file_dir, file_name, idx, jdx, regressionProc
         log_row = []
         if response.status_code == 200:
             response_json = json.loads(response.content)
-            #print(response_json)
+            # print(response_json)
             log_row.append(str(response_json.get('tripId')))
             if regressiontype == RegressionTypeEnum.MentorBusiness or regressiontype == RegressionTypeEnum.GEOTAB:
                 log_row.append(file_name)
             else:
                 log_row.append(str(response_json.get('tripId')))
+            path_file = FOLDER_PATH + "jsonfiles/temp2/" + str(driver_id)
+            if not path.exists(path_file):
+                os.makedirs(path_file, exist_ok=True)
+            with open(path_file + "/" + str(driver_id) + "-" + file_name + ".json", "w") as outfile:
+                outfile.write(json.dumps(response_json, indent=4))
     except Exception as e:
         print("driver_id=" + str(driver_id) + ",file_name=" + str(file_name) + ",Error" + str(e))
     return log_row

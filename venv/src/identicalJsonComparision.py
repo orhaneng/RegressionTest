@@ -31,27 +31,35 @@ def cleanJSON(text):
     dict = yaml.load(text, Loader=yaml.FullLoader)
     dict = remove_keys(dict, "tripId")
     dict = remove_keys(dict, "eventId")
+    dict = remove_keys(dict, "eventInstanceId")
     dict = remove_keys(dict, "telematicsVersion")
     dict = remove_keys(dict, "mapProvider")
-    '''
+
     dict = remove_keys(dict, "maxSpeed")
     dict = remove_keys(dict, "maxAcceleration")
-    dict = remove_keys(dict, "legIndex")
-    dict = remove_keys(dict, "timeOffset")
-    '''
+    #dict = remove_keys(dict, "legIndex")
+    #dict = remove_keys(dict, "timeOffset")
+
     text = str(dict).replace("\'", "\"")
     return text
 
 
 def checktwoJSONfiles(file1, file2, name):
-    with open(file1, encoding='utf-8') as f:
-        trip_json1 = json.loads(cleanJSON(f.read()))
+    try:
+        with open(file1, encoding='utf-8') as f:
+            trip_json1 = json.loads(cleanJSON(f.read()))
 
-    with open(file2, encoding='utf-8') as f:
-        trip_json2 = json.loads(cleanJSON(f.read()))
+        with open(file2, encoding='utf-8') as f:
+            trip_json2 = json.loads(cleanJSON(f.read()))
 
-    return [diff(trip_json1, trip_json2), name]
+        return [diff(trip_json1, trip_json2), name]
 
+    except Exception as e:
+        print(e)
+        print(file1)
+        print(file2)
+        print(name)
+    return ["", name]
 
 def multi_run_wrapper(args):
     return checktwoJSONfiles(*args)

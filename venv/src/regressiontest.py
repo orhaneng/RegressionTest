@@ -274,6 +274,8 @@ def startregressiontest():
 
     os.system(
         "rm -r " + FOLDER_PATH + "jsonfiles/temp")
+    os.system(
+        "rm -r " + FOLDER_PATH + "jsonfiles/temp2")
 
     print("Starting telematics...")
     os.system("sh " + FOLDER_PATH + "build/telematics-server/server.sh start")
@@ -286,14 +288,17 @@ def startregressiontest():
                   ".csv")[0])
     print("Current Telematics version:" + version)
 
-    log_dataframe = uploadTripFilesandProcess(FOLDER_PATH + "tripfiles/" + poolsize.value + "/", threadsize,
+    log_dataframe = uploadTripFilesandProcess(FOLDER_PATH, FOLDER_PATH + "tripfiles/" + poolsize.value + "/", threadsize,
                                               regressionProcessType, regressionType)
 
     # copy json files temp to pools
     os.system(
         "rm -r " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value + "/*")
+#    os.system(
+#        "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
     os.system(
-        "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
+        "mv " + FOLDER_PATH + "jsonfiles/temp2/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
+
     print("reading trips from JSON files")
     trip_results = getTripsFromRegressionServer(
         FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value,
@@ -304,7 +309,7 @@ def startregressiontest():
     # trip_id is coming random from telematics server. That's why, filenames are being changed by s3_key. It is the only primary paramater.
     if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.GEOTAB:
         print("setting s3_key to filename")
-        changefilenames(combinedresult_s3key, regressionType, jsonfilenameEnum, poolsize, FOLDER_PATH, threadsize)
+        #changefilenames(combinedresult_s3key, regressionType, jsonfilenameEnum, poolsize, FOLDER_PATH, threadsize)
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")

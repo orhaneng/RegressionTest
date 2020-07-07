@@ -76,10 +76,8 @@ def processJSONFile(file):
         for event in trip_json["events"]:
             e_name = event["eventType"]
 
-            e_start = (datetime.datetime.fromtimestamp(event["startTimestamp"]["seconds"]) + datetime.timedelta(
-                microseconds=event["startTimestamp"]["nanos"] / 1000)).isoformat(timespec='milliseconds')
-            e_end = (datetime.datetime.fromtimestamp(event["endTimestamp"]["seconds"]) + datetime.timedelta(
-                microseconds=event["endTimestamp"]["nanos"] / 1000)).isoformat(timespec='milliseconds')
+            e_start = (datetime.datetime.fromtimestamp(event["startTimestamp"] / 1000)).isoformat(timespec='milliseconds')
+            e_end = (datetime.datetime.fromtimestamp(event["endTimestamp"] / 1000)).isoformat(timespec='milliseconds')
 
             start = datetime.datetime(int(e_start[:4]), int(e_start[5:7]), int(e_start[8:10]),
                                       int(e_start[11:13]), int(e_start[14:16]),
@@ -97,7 +95,7 @@ def processJSONFile(file):
     score = "None"
     if "scores" in trip_json:
         score = "None" if not ("rating" in trip_json["scores"][0]) else \
-            trip_json["scores"][0]["score"]
+            trip_json["scores"][0]["value"]
     distance = "None"
     if "distance" in trip_json:
         distance = trip_json["distance"]
@@ -105,7 +103,7 @@ def processJSONFile(file):
     if "duration" in trip_json:
         duration = trip_json["duration"]
     trips.loc[index] = [trip_json["driverId"], trip_json["tripId"], trip_json["startTimestamp"], score,
-                        trip_json["distance"], trip_json["duration"], []]
+                        trip_json["distance"], "", []]
     index += 1
     event_definition = ["STOP", "START", "SMOOTH_STOP", "SMOOTH_START",
                         "RIGHT_TURN", "LEFT_TURN", "SMOOTH_RIGHT_TURN", "SMOOTH_LEFT_TURN",
@@ -119,12 +117,11 @@ def processJSONFile(file):
         row = []
         row.append(trip_id)
         row.append(trips.loc[index, "driver_id"])
-        e_start = (datetime.datetime.fromtimestamp(trips.loc[index, "start_time"]["seconds"]) + datetime.timedelta(
-            microseconds=trips.loc[index, "start_time"]["nanos"] / 1000)).isoformat(timespec='milliseconds')
+        e_start = (datetime.datetime.fromtimestamp(trips.loc[index, "start_time"] / 1000)).isoformat(timespec='milliseconds')
         row.append(e_start)
         row.append(trips.loc[index, "score"])
         row.append(trips.loc[index, "distance"])
-        row.append(trips.loc[index, "duration"])
+        row.append("")
         for definition in event_definition:
             if event_dict != None and event_dict.get(definition) != None:
                 row.append(event_dict.get(definition)[0])
