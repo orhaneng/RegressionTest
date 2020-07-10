@@ -30,6 +30,7 @@ def multi_run_wrapper(args):
 def multi_run_wrapper(args):
     return getgeotablocations(*args)
 
+
 def multi_run_wrapper2(args):
     return onebyone(*args)
 
@@ -52,7 +53,7 @@ def getgeotablocationsSpeedLimit(driver_id, trip_id, timestamp):
 
     data = "latitude,longitude,timestamp\n"
     count = 0
-    print("total",str(len(trip['route'])))
+    print("total", str(len(trip['route'])))
     if 'route' in trip:
         for item in trip['route']:
             try:
@@ -94,17 +95,19 @@ def getgeotablocationsSpeedLimit(driver_id, trip_id, timestamp):
                                         else:
                                             speedlimit = layer['FROM_REF_SPEED_LIMIT']
                                             break
-                                if route == 'LINK_ATTRIBUTE_FCN' and len(routepoint['attributes']["LINK_ATTRIBUTE_FCN"]) > 0:
+                                if route == 'LINK_ATTRIBUTE_FCN' and len(
+                                        routepoint['attributes']["LINK_ATTRIBUTE_FCN"]) > 0:
                                     if 'RAMP' in routepoint['attributes']["LINK_ATTRIBUTE_FCN"][0]:
                                         ramp = routepoint['attributes']["LINK_ATTRIBUTE_FCN"][0]['RAMP']
                         speedlimitmph = None
                         if speedlimit != None:
                             speedlimitmph = round(
                                 (float(speedlimit) * 0.621371))
-                        df_result.loc[(df_result['timestamp'] == timestamp), ['speed_limit_HERE_kph', 'speed_limit_HERE_MPH',
-                                                                              'confidence', 'ramp']] = [speedlimit, speedlimitmph,
-                                                                                                        item['confidenceValue'],
-                                                                                                        ramp]
+                        df_result.loc[
+                            (df_result['timestamp'] == timestamp), ['speed_limit_HERE_kph', 'speed_limit_HERE_MPH',
+                                                                    'confidence', 'ramp']] = [speedlimit, speedlimitmph,
+                                                                                              item['confidenceValue'],
+                                                                                              ramp]
             except Exception as e:
                 print(e)
     return df_result
@@ -128,7 +131,7 @@ def getgeotablocations(driver_id, trip_id, timestamp):
 
     data = "latitude,longitude,timestamp\n"
     count = 0
-    print("total",str(len(trip['route'])))
+    print("total", str(len(trip['route'])))
     if 'route' in trip:
         for item in trip['route']:
             try:
@@ -154,19 +157,18 @@ def getgeotablocations(driver_id, trip_id, timestamp):
                 print(e)
     return df_result
 
+
 def multi():
     pool = Pool(4)
     data = pd.read_csv(
-        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/geotabspeeding.csv")
-
-    df_result = pd.DataFrame(columns=['driver_id', 'trip_id', 'latitude', 'longitude', 'timestamp', 'speedLimit', 'speed', 'speed_limit'])
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/Results.csv")
 
     listquery = []
     #
     for i, row in data.iterrows():
         listquery.append(
             [row['driver_id'], row['trip_id'], row['date_part']])
-        if(i==100):
+        if (i == 100):
             break
 
     try:
@@ -183,7 +185,7 @@ def multi():
         "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/geotablocations100trips.csv")
 
 
-multi()
+#multi()
 
 '''
 server_url = 'https://rme.api.here.com/2/matchroute.json?app_id=yhsdwnC8DkOnH1pJs7k9&app_code=TzCzBAdNjTW9J-jd1iFTdw&routemode=car&attributes=SPEED_LIMITS_FCn(FROM_REF_SPEED_LIMIT,TO_REF_SPEED_LIMIT),LINK_ATTRIBUTE2_FCn(PARKING_LOT_ROAD)'
@@ -252,7 +254,7 @@ def onebyone(data):
 def multiamazon():
     pool = Pool(4)
     dataset = pd.read_csv(
-        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/Amazon_Excessive_Speeding_Details_(Daily - test)_20200619_021514_2.csv")
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/Results.csv")
 
     df_result = pd.DataFrame(
         columns=['driver_id', 'trip_id', 'latitude', 'longitude', 'timestamp', 'speedLimit', 'speed', 'speed_limit'])
@@ -262,9 +264,11 @@ def multiamazon():
     dataset['SPEED_LIMIT_HERE_MPH'] = None
     #
     for i, row in dataset.iterrows():
+        if i == 3987:
+            break
         datahere = "latitude,longitude,timestamp\n"
-        datahere = datahere + str(row['ExceptionDetailLatitude']) + "," + str(
-            row['ExceptionDetailLongitude']) + "," + datetime.datetime.fromtimestamp(
+        datahere = datahere + str(row['latitude']) + "," + str(
+            row['longitude']) + "," + datetime.datetime.fromtimestamp(
             (row['timestamp'] / 1000.0)).astimezone(utc_zone).strftime('%Y-%m-%dT%H:%M:%S.%f%z') + "\n"
         listquery.append([datahere])
     #
@@ -282,10 +286,10 @@ def multiamazon():
     for item in resultlist:
         dataset.loc[(dataset['timestamp'] == item[0]), ['SPEED_LIMIT_HERE_MPH']] = [item[1]]
     dataset.to_csv(
-        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/Amazon_Excessive_Speeding_Details_(Daily - test)_20200619_021514_3copy.csv")
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/Results2.csv")
 
 
-# multiamazon()
+multiamazon()
 
 
 def distanceanalysis():
@@ -310,7 +314,7 @@ def distanceanalysis():
     #    "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/geotabspeedinglocation100difference.csv")
 
 
-#distanceanalysis()
+# distanceanalysis()
 
 
 # multiamazon()
@@ -360,5 +364,35 @@ def amazondistanceanalysis():
 
     print("nongeotab mean", datanongeotab["diff"].mean())
 
-#amazondistanceanalysis()
 
+# amazondistanceanalysis()
+
+
+def adamresults():
+    dataadam = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/Results.csv")
+    dataadam["HERE_EDRIVING"] = ""
+
+    dataedriving = pd.read_csv(
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/geotab_locations_speedlimit.csv")
+
+    count = 0
+    for index, item in dataadam.iterrows():
+
+        drivingspeed = dataedriving[(dataedriving['trip_id'] == item[2]) & (dataedriving['driver_id'] == item[1]) & ((
+                        dataedriving['latitude'] == item[3]) & (dataedriving['longitude'] == item[4]))]
+        if len(drivingspeed) == 0:
+            #print(drivingspeed)
+            count = count +1
+            print(count)
+        #print(drivingspeed)
+    print(count)
+        #dataadam.loc[
+        #    (dataadam['trip_id'] == item[2]) & (dataadam['driver_id'] == item[1]) & (
+        #                dataedriving['latitude'] == item[3]) & (dataadam['longitude'] == item[4]), ['HERE_EDRIVING']] = [drivingspeed]
+        #print(row)
+
+
+
+
+#adamresults()
