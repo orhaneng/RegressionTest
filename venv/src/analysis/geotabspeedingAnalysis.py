@@ -254,7 +254,7 @@ def onebyone(data):
 def multiamazon():
     pool = Pool(4)
     dataset = pd.read_csv(
-        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/Results.csv")
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/Speed_Data.csv")
 
     df_result = pd.DataFrame(
         columns=['driver_id', 'trip_id', 'latitude', 'longitude', 'timestamp', 'speedLimit', 'speed', 'speed_limit'])
@@ -264,7 +264,7 @@ def multiamazon():
     dataset['SPEED_LIMIT_HERE_MPH'] = None
     #
     for i, row in dataset.iterrows():
-        if i == 3987:
+        if i == 5225:
             break
         datahere = "latitude,longitude,timestamp\n"
         datahere = datahere + str(row['latitude']) + "," + str(
@@ -286,7 +286,7 @@ def multiamazon():
     for item in resultlist:
         dataset.loc[(dataset['timestamp'] == item[0]), ['SPEED_LIMIT_HERE_MPH']] = [item[1]]
     dataset.to_csv(
-        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/Results2.csv")
+        "/Users/omerorhan/Documents/EventDetection/regression_server/amazonnewspeedingevents/adam/Speed_Data2.csv")
 
 
 multiamazon()

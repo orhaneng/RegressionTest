@@ -194,11 +194,11 @@ def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
                 dataserviceproperties[key] = value
             if len(values) < 2:
                 value = line.split('=')
-    
+
     data = ""
     for key, value in dataserviceproperties.items():
         if key == 'file.bucket':
-            value = FOLDER_PATH + "tripfiles/" + poolsize.value+"\n"
+            value = FOLDER_PATH + "tripfiles/" + poolsize.value + "\n"
         data = data + key + "=" + value
 
     myfile = open(FOLDER_PATH + "build/telematics-server/config/data-service.properties", 'w')
@@ -221,9 +221,9 @@ def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
     for key, value in dataserviceproperties.items():
         if key == 'regression.is_recording':
             if regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
-                value = "true\n"
+                value = "false\n"
             else:
-                value= "false\n"
+                value = "false\n"
         data = data + key + "=" + value
 
     myfile = open(FOLDER_PATH + "build/telematics-server/config/map-service.properties", 'w')
@@ -251,7 +251,6 @@ def controlfolderfileprocess(regressionProcessType, regressionType, poolsize):
         myfile = open(FOLDER_PATH + "build/telematics-server/config/pairing.properties", 'w')
         myfile.writelines(data)
         myfile.close()
-
 
     return FOLDER_PATH
 
@@ -288,14 +287,15 @@ def startregressiontest():
                   ".csv")[0])
     print("Current Telematics version:" + version)
 
-    log_dataframe = uploadTripFilesandProcess(FOLDER_PATH, FOLDER_PATH + "tripfiles/" + poolsize.value + "/", threadsize,
+    log_dataframe = uploadTripFilesandProcess(FOLDER_PATH, FOLDER_PATH + "tripfiles/" + poolsize.value + "/",
+                                              threadsize,
                                               regressionProcessType, regressionType)
 
     # copy json files temp to pools
     os.system(
         "rm -r " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value + "/*")
-#    os.system(
-#        "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
+    #    os.system(
+    #        "mv " + FOLDER_PATH + "jsonfiles/temp/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
     os.system(
         "mv " + FOLDER_PATH + "jsonfiles/temp2/* " + FOLDER_PATH + "jsonfiles/" + regressionType.value + "/" + jsonfilenameEnum.value + "/" + poolsize.value)
 
@@ -309,7 +309,7 @@ def startregressiontest():
     # trip_id is coming random from telematics server. That's why, filenames are being changed by s3_key. It is the only primary paramater.
     if regressionType == RegressionTypeEnum.MentorBusiness or regressionType == RegressionTypeEnum.GEOTAB:
         print("setting s3_key to filename")
-        #changefilenames(combinedresult_s3key, regressionType, jsonfilenameEnum, poolsize, FOLDER_PATH, threadsize)
+        # changefilenames(combinedresult_s3key, regressionType, jsonfilenameEnum, poolsize, FOLDER_PATH, threadsize)
 
     if regressionProcessType == RegressionProcessTypeEnum.RegressionUpdateBaseTripresults or regressionProcessType == RegressionProcessTypeEnum.RegressionMapBase:
         VersionFile(FOLDER_PATH + "tripresults/maintripresult/" + poolsize.value + "/", ".csv")
